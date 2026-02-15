@@ -226,6 +226,30 @@ input[type="number"] {
 input[type="number"]::placeholder { color: var(--placeholder); }
 .input-row { display: flex; gap: 5px; align-items: stretch; }
 .input-row input { flex: 1; min-width: 0; }
+
+/* ── Mobile: full-width swipeable cards ────────────────────────────────────── */
+@media (max-width: 640px) {
+  .cards-row {
+    padding: 10px;
+    gap: 10px;
+    overflow-x: scroll;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    scroll-padding-left: 10px;
+  }
+  .cards-row::-webkit-scrollbar { display: none; }
+  .card {
+    flex: 0 0 calc(100vw - 20px);
+    min-width: calc(100vw - 20px);
+    max-width: none;
+    scroll-snap-align: start;
+  }
+  /* Larger tap targets on mobile */
+  button { padding: 10px 14px; font-size: 13px; }
+  .btn-close { padding: 12px; }
+  input[type="number"] { padding: 8px 10px; font-size: 14px; }
+}
 </style>
 </head>
 <body>
