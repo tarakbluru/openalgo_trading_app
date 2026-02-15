@@ -228,7 +228,7 @@ def api_smart_order():
 # ── Entry point ──────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5003))
+    port = int(os.getenv('PORT', 5004))
     print(f"Trading App  →  http://localhost:{port}")
     print(f"OpenAlgo URL →  {OPENALGO_URL}")
     print(f"API key      →  {'set' if OPENALGO_API_KEY else 'NOT SET — edit .env'}")

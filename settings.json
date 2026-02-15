@@ -1,6 +1,4 @@
 {
-  "openalgo_url": "http://localhost:5000/api/v1",
-  "api_key": "",
   "nifty": {
     "expiry": "17FEB26",
     "strike_ce": "25700",
@@ -14,7 +12,7 @@
     "lot_size": 30
   },
   "common": {
-    "quantity_lots": 2,
+    "quantity_lots": 5,
     "product": "MIS"
   }
 }

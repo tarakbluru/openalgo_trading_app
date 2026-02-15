@@ -266,7 +266,7 @@ input[type="number"]::placeholder { color: var(--placeholder); }
       </div>
     </div>
 
-    <div class="exit-sec" id="exit_{{ sym }}" style="display:none">
+    <div class="exit-sec" id="exit_{{ sym }}">
       <div class="sec-label">Exit / Manage</div>
       <button class="btn-close"
               onclick="smartClose('{{ sym }}')">CLOSE NOW (Market)</button>
@@ -362,23 +362,17 @@ function renderCard(sym, qty) {
   const ls    = LOT_SIZES[sym];
   const badge = document.getElementById('badge_' + sym);
   const btns  = document.getElementById('btns_'  + sym);
-  const entry = document.getElementById('entry_' + sym);
-  const exit  = document.getElementById('exit_'  + sym);
 
   if (qty === 0) {
-    badge.textContent   = 'FLAT';
-    badge.className     = 'pos-badge badge-flat';
-    entry.style.display = 'flex';
-    exit.style.display  = 'none';
-    btns.innerHTML      = '';
+    badge.textContent = 'FLAT';
+    badge.className   = 'pos-badge badge-flat';
+    btns.innerHTML    = '';
   } else {
     const dir  = qty > 0 ? 'LONG' : 'SHORT';
     const lots = (Math.abs(qty) / ls).toFixed(1);
     const sign = qty > 0 ? '+' : '';
-    badge.textContent   = `${dir} ${lots}L (${sign}${qty})`;
-    badge.className     = `pos-badge badge-${dir.toLowerCase()}`;
-    entry.style.display = 'none';
-    exit.style.display  = 'flex';
+    badge.textContent = `${dir} ${lots}L (${sign}${qty})`;
+    badge.className   = `pos-badge badge-${dir.toLowerCase()}`;
 
     const half = Math.trunc(qty / 2);
     const rev  = -qty;
