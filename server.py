@@ -19,7 +19,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'))
 
-SETTINGS_FILE   = os.path.join(BASE_DIR, 'settings.json')
+SETTINGS_FILE   = os.path.join(BASE_DIR, 'data', 'settings.json')
 OPENALGO_URL    = os.getenv('OPENALGO_URL',    'http://localhost:5000/api/v1').rstrip('/')
 OPENALGO_API_KEY = os.getenv('OPENALGO_API_KEY', '')
 

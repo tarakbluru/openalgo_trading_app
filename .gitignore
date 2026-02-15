@@ -13,7 +13,7 @@ env/
 
 # Runtime state / local config
 ui_state.json
-settings.json
+data/
 
 # Editor
 .vscode/
