@@ -13,8 +13,15 @@ env/
 
 # Runtime state / local config
 ui_state.json
+settings.json
 data/
 
 # Editor
 .vscode/
 *.swp
+
+# Claude Code
+.claude/
+
+# Dev / debug artefacts
+issue/
