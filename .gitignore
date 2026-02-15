@@ -11,8 +11,9 @@ __pycache__/
 venv/
 env/
 
-# Runtime state
+# Runtime state / local config
 ui_state.json
+settings.json
 
 # Editor
 .vscode/
