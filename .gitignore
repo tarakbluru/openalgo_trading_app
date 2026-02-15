@@ -1,0 +1,19 @@
+# Credentials — never commit
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Runtime state
+ui_state.json
+
+# Editor
+.vscode/
+*.swp

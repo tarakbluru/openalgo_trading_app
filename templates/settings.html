@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings — Trading App</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 24px 16px;
+}
+.container { max-width: 580px; margin: 0 auto; }
+h1 { color: #f97316; font-size: 20px; margin-bottom: 20px; }
+
+h2 {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: #64748b; margin: 20px 0 10px;
+}
+
+.info-box {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.info-ok  { background: #14532d; color: #86efac; border: 1px solid #166534; }
+.info-warn { background: #431407; color: #fdba74; border: 1px solid #7c2d12; }
+
+.field { margin-bottom: 12px; }
+label  { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+input[type="text"], input[type="number"], select {
+  width: 100%; padding: 8px 10px;
+  background: #1e293b; border: 1px solid #334155;
+  border-radius: 6px; color: #e2e8f0; font-size: 14px;
+}
+input:focus, select:focus {
+  outline: none; border-color: #3b82f6;
+}
+.row { display: flex; gap: 10px; }
+.row .field { flex: 1; }
+.hint { font-size: 11px; color: #475569; margin-top: 3px; }
+.sep  { height: 1px; background: #1e293b; margin: 16px 0; }
+
+.actions { display: flex; gap: 10px; margin-top: 24px; }
+.btn-save {
+  flex: 1; padding: 10px;
+  background: #15803d; color: #fff;
+  border: none; border-radius: 6px;
+  font-size: 15px; font-weight: bold; cursor: pointer;
+}
+.btn-save:hover { background: #166534; }
+.btn-back {
+  padding: 10px 18px; background: #334155; color: #e2e8f0;
+  border: none; border-radius: 6px; font-size: 14px; cursor: pointer;
+  text-decoration: none; display: flex; align-items: center;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Settings</h1>
+
+  <!-- API connection status -->
+  {% if api_ok %}
+  <div class="info-box info-ok">
+    ✓ API key is set &nbsp;·&nbsp; {{ openalgo_url }}
+  </div>
+  {% else %}
+  <div class="info-box info-warn">
+    ⚠ API key not set. Edit <strong>.env</strong> in the app folder:<br>
+    <code style="font-size:12px">OPENALGO_API_KEY=your_key_here</code><br>
+    <code style="font-size:12px">OPENALGO_URL={{ openalgo_url }}</code>
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/settings">
+
+    <h2>NIFTY</h2>
+    <div class="field">
+      <label>Expiry</label>
+      <input type="text" name="nifty_expiry" value="{{ s.nifty.expiry }}" required>
+      <div class="hint">Format: DDMMMYY — e.g. 17FEB26</div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>CE Strike</label>
+        <input type="text" name="nifty_strike_ce" value="{{ s.nifty.strike_ce }}" required>
+      </div>
+      <div class="field">
+        <label>PE Strike</label>
+        <input type="text" name="nifty_strike_pe" value="{{ s.nifty.strike_pe }}" required>
+      </div>
+      <div class="field">
+        <label>Lot Size</label>
+        <input type="number" name="nifty_lot_size" value="{{ s.nifty.lot_size }}" min="1" required>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <h2>BANKNIFTY</h2>
+    <div class="field">
+      <label>Expiry</label>
+      <input type="text" name="banknifty_expiry" value="{{ s.banknifty.expiry }}" required>
+      <div class="hint">Format: DDMMMYY — e.g. 24FEB26</div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>CE Strike</label>
+        <input type="text" name="banknifty_strike_ce" value="{{ s.banknifty.strike_ce }}" required>
+      </div>
+      <div class="field">
+        <label>PE Strike</label>
+        <input type="text" name="banknifty_strike_pe" value="{{ s.banknifty.strike_pe }}" required>
+      </div>
+      <div class="field">
+        <label>Lot Size</label>
+        <input type="number" name="banknifty_lot_size" value="{{ s.banknifty.lot_size }}" min="1" required>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <h2>Order Defaults</h2>
+    <div class="row">
+      <div class="field">
+        <label>Default Lots</label>
+        <input type="number" name="quantity_lots"
+               value="{{ s.common.quantity_lots }}" min="1" required>
+        <div class="hint">Used for LONG / SHORT entry buttons</div>
+      </div>
+      <div class="field">
+        <label>Product Type</label>
+        <select name="product">
+          <option value="MIS"
+            {% if s.common.product == 'MIS' %}selected{% endif %}>
+            MIS (Intraday)
+          </option>
+          <option value="NRML"
+            {% if s.common.product == 'NRML' %}selected{% endif %}>
+            NRML (Overnight F&amp;O)
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a href="/" class="btn-back">← Back</a>
+      <button type="submit" class="btn-save">Save Settings</button>
+    </div>
+  </form>
+</div>
+</body>
+</html>
