@@ -5,46 +5,115 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Settings — Trading App</title>
 <style>
+/* ── Theme variables ──────────────────────────────────────────────────────── */
+:root {
+  --bg:               #0f172a;
+  --surface:          #1e293b;
+  --border:           #334155;
+  --text:             #e2e8f0;
+  --text-muted:       #64748b;
+  --text-dim:         #94a3b8;
+  --input-bg:         #1e293b;
+  --accent:           #f97316;
+  --btn-neutral-bg:   #334155;
+  --btn-neutral-text: #e2e8f0;
+  --hint:             #475569;
+  --sep:              #1e293b;
+}
+
+body.light {
+  --bg:               #f1f5f9;
+  --surface:          #ffffff;
+  --border:           #cbd5e1;
+  --text:             #1e293b;
+  --text-muted:       #64748b;
+  --text-dim:         #94a3b8;
+  --input-bg:         #ffffff;
+  --accent:           #ea580c;
+  --btn-neutral-bg:   #e2e8f0;
+  --btn-neutral-text: #1e293b;
+  --hint:             #94a3b8;
+  --sep:              #e2e8f0;
+}
+
+/* ── Base ── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
-  background: #0f172a;
+  background: var(--bg);
+  color: var(--text);
+  padding: 0;
+  min-height: 100vh;
+  transition: background 0.2s, color 0.2s;
+}
+
+/* ── Top bar (stays dark) ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1e293b;
+  padding: 10px 16px;
+  border-bottom: 2px solid #0f3460;
+  margin-bottom: 24px;
+}
+.topbar h1 { font-size: 17px; color: #f97316; }
+.topbar-right { display: flex; gap: 8px; align-items: center; }
+.btn-theme {
+  background: #334155;
   color: #e2e8f0;
-  padding: 24px 16px;
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 5px 10px; font-size: 11px;
+  border-radius: 5px; cursor: pointer; font-weight: 600;
 }
-.container { max-width: 580px; margin: 0 auto; }
-h1 { color: #f97316; font-size: 20px; margin-bottom: 20px; }
+.btn-theme:hover { opacity: 0.82; }
 
-h2 {
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  color: #64748b; margin: 20px 0 10px;
-}
+/* ── Container ── */
+.container { max-width: 580px; margin: 0 auto; padding: 0 16px 40px; }
 
+/* ── Info box ── */
 .info-box {
   padding: 10px 14px;
   border-radius: 6px;
   font-size: 13px;
   margin-bottom: 16px;
+  line-height: 1.6;
 }
-.info-ok  { background: #14532d; color: #86efac; border: 1px solid #166534; }
+.info-ok   { background: #14532d; color: #86efac; border: 1px solid #166534; }
 .info-warn { background: #431407; color: #fdba74; border: 1px solid #7c2d12; }
 
+body.light .info-ok   { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+body.light .info-warn { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
+
+/* ── Section headings ── */
+h2 {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-muted); margin: 20px 0 10px;
+}
+
+/* ── Form fields ── */
 .field { margin-bottom: 12px; }
-label  { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-input[type="text"], input[type="number"], select {
+label  { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+
+input[type="text"],
+input[type="number"],
+select {
   width: 100%; padding: 8px 10px;
-  background: #1e293b; border: 1px solid #334155;
-  border-radius: 6px; color: #e2e8f0; font-size: 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-size: 14px;
+  transition: background 0.2s, border-color 0.2s;
 }
-input:focus, select:focus {
-  outline: none; border-color: #3b82f6;
-}
+input:focus, select:focus { outline: none; border-color: #3b82f6; }
+select option { background: var(--input-bg); color: var(--text); }
+
 .row { display: flex; gap: 10px; }
 .row .field { flex: 1; }
-.hint { font-size: 11px; color: #475569; margin-top: 3px; }
-.sep  { height: 1px; background: #1e293b; margin: 16px 0; }
+.hint { font-size: 11px; color: var(--hint); margin-top: 3px; }
+.sep  { height: 1px; background: var(--sep); margin: 16px 0; }
 
+/* ── Actions ── */
 .actions { display: flex; gap: 10px; margin-top: 24px; }
 .btn-save {
   flex: 1; padding: 10px;
@@ -54,24 +123,34 @@ input:focus, select:focus {
 }
 .btn-save:hover { background: #166534; }
 .btn-back {
-  padding: 10px 18px; background: #334155; color: #e2e8f0;
+  padding: 10px 18px;
+  background: var(--btn-neutral-bg);
+  color: var(--btn-neutral-text);
   border: none; border-radius: 6px; font-size: 14px; cursor: pointer;
   text-decoration: none; display: flex; align-items: center;
+  transition: background 0.2s, color 0.2s;
 }
 </style>
 </head>
 <body>
-<div class="container">
+
+<div class="topbar">
   <h1>Settings</h1>
+  <div class="topbar-right">
+    <button class="btn-theme" id="theme-btn" onclick="toggleTheme()">Light</button>
+  </div>
+</div>
+
+<div class="container">
 
   <!-- API connection status -->
   {% if api_ok %}
   <div class="info-box info-ok">
-    ✓ API key is set &nbsp;·&nbsp; {{ openalgo_url }}
+    API key configured &nbsp;&middot;&nbsp; {{ openalgo_url }}
   </div>
   {% else %}
   <div class="info-box info-warn">
-    ⚠ API key not set. Edit <strong>.env</strong> in the app folder:<br>
+    API key not set. Edit <strong>.env</strong> in the app folder:<br>
     <code style="font-size:12px">OPENALGO_API_KEY=your_key_here</code><br>
     <code style="font-size:12px">OPENALGO_URL={{ openalgo_url }}</code>
   </div>
@@ -147,10 +226,24 @@ input:focus, select:focus {
     </div>
 
     <div class="actions">
-      <a href="/" class="btn-back">← Back</a>
+      <a href="/" class="btn-back">Back</a>
       <button type="submit" class="btn-save">Save Settings</button>
     </div>
   </form>
 </div>
+
+<script>
+// ── Theme (shared with trading page via localStorage) ──────────────────────
+function applyTheme(t) {
+  document.body.classList.toggle('light', t === 'light');
+  document.getElementById('theme-btn').textContent = t === 'light' ? 'Dark' : 'Light';
+}
+function toggleTheme() {
+  const next = document.body.classList.contains('light') ? 'dark' : 'light';
+  localStorage.setItem('theme', next);
+  applyTheme(next);
+}
+applyTheme(localStorage.getItem('theme') || 'dark');
+</script>
 </body>
 </html>
