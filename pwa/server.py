@@ -53,6 +53,7 @@ _MIME = {
     'manifest.json': 'application/manifest+json',
     'sw.js':         'application/javascript; charset=utf-8',
     'icon.svg':      'image/svg+xml',
+    'style.css':     'text/css; charset=utf-8',
 }
 
 _STATIC: dict[str, bytes] = {}
@@ -74,6 +75,7 @@ _PWA_HEAD = (
     '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">'
     '<meta name="apple-mobile-web-app-title" content="Trading App">'
     '<link rel="apple-touch-icon" href="/icon.svg">'
+    '<link rel="stylesheet" href="/style.css">'
 )
 
 _PWA_BODY = (
@@ -142,24 +144,33 @@ class ProxyHandler(BaseHTTPRequestHandler):
                     html = _inject_pwa(html)
                     raw  = html.encode('utf-8')
 
-                self.send_response(status)
-                for k, v in resp.headers.items():
-                    # Skip headers we're managing ourselves
-                    if k.lower() in ('content-length', 'transfer-encoding',
-                                     'content-encoding'):
-                        continue
-                    self.send_header(k, v)
-                self.send_header('Content-Length', str(len(raw)))
-                self.end_headers()
-                self.wfile.write(raw)
+                try:
+                    self.send_response(status)
+                    for k, v in resp.headers.items():
+                        # Skip headers we're managing ourselves
+                        if k.lower() in ('content-length', 'transfer-encoding',
+                                         'content-encoding'):
+                            continue
+                        self.send_header(k, v)
+                    self.send_header('Content-Length', str(len(raw)))
+                    self.end_headers()
+                    self.wfile.write(raw)
+                except (ConnectionAbortedError, BrokenPipeError):
+                    pass  # Browser closed the connection — harmless
 
         except urllib.error.HTTPError as e:
             raw = e.read()
-            self.send_response(e.code)
-            self.send_header('Content-Type', e.headers.get('Content-Type', 'text/plain'))
-            self.send_header('Content-Length', str(len(raw)))
-            self.end_headers()
-            self.wfile.write(raw)
+            try:
+                self.send_response(e.code)
+                self.send_header('Content-Type', e.headers.get('Content-Type', 'text/plain'))
+                self.send_header('Content-Length', str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+            except (ConnectionAbortedError, BrokenPipeError):
+                pass
+
+        except (ConnectionAbortedError, BrokenPipeError):
+            pass  # Browser disconnected before we even fetched — harmless
 
         except Exception as exc:
             msg = f'<h3>Proxy Error</h3><pre>{exc}</pre>\n<p>Is standalone_server.py running at {BACKEND_URL}?</p>'

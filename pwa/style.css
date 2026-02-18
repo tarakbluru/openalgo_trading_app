@@ -1,0 +1,33 @@
+/* PWA-only styles — only active when installed as a standalone app */
+@media (display-mode: standalone) {
+
+  /* Dark surround outside the app frame */
+  html {
+    background: #06101e;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #06101e;
+  }
+  body.light {
+    background: #64748b;
+  }
+
+  /* Phone-width frame, centered */
+  #app-wrapper {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100vh;
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.7),
+                0 0 0 1px rgba(255, 255, 255, 0.06);
+    overflow-x: hidden;
+  }
+
+  /* Topbar fills the frame width */
+  .topbar {
+    max-width: 430px;
+    width: 100%;
+  }
+}
