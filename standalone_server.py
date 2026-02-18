@@ -69,10 +69,23 @@ def save_settings(s):
 # ── Order Management ─────────────────────────────────────────────────────
 
 def load_orders():
-    """Load stored order IDs."""
+    """Load stored order IDs. Auto-resets if orders are from a previous trading day."""
     try:
         with open(ORDERS_FILE, encoding='utf-8') as fh:
-            return json.load(fh)
+            orders = json.load(fh)
+        # Reset if any orders exist from a previous day
+        today = __import__('datetime').date.today().isoformat()
+        if orders:
+            import datetime
+            oldest = min(
+                (o.get('timestamp', 0) for o in orders),
+                default=0
+            )
+            order_date = datetime.date.fromtimestamp(oldest).isoformat() if oldest else today
+            if order_date != today:
+                save_orders([])
+                return []
+        return orders
     except (FileNotFoundError, json.JSONDecodeError):
         return []
 
@@ -104,6 +117,38 @@ def store_order(order_id, symbol=None, action=None, quantity=None, price=None, p
 def get_pending_orders():
     """Get all pending orders."""
     return [o for o in load_orders() if o.get("status") == "pending"]
+
+
+def sync_order_status():
+    """Check OpenAlgo orderbook and update local order statuses."""
+    result = api_post('orderbook', {"apikey": OPENALGO_API_KEY})
+    orderbook_orders = {}
+    
+    if result.get('status') == 'success':
+        orders_data = result.get('data', {})
+        if isinstance(orders_data, dict):
+            orders_list = orders_data.get('orders', [])
+        else:
+            orders_list = orders_data
+        for order in orders_list:
+            orderbook_orders[order.get('orderid')] = order.get('status')
+    
+    orders = load_orders()
+    updated = False
+    
+    for local_order in orders:
+        if local_order.get('status') == 'pending':
+            order_id = local_order.get('order_id')
+            if order_id in orderbook_orders:
+                broker_status = orderbook_orders[order_id]
+                if broker_status in ['COMPLETE', 'REJECTED', 'CANCELLED', 'CLOSED']:
+                    local_order['status'] = broker_status.lower()
+                    updated = True
+    
+    if updated:
+        save_orders(orders)
+    
+    return {"status": "success", "updated": updated}
 
 
 def cancel_order_by_id(order_id):
@@ -240,77 +285,90 @@ body.light {
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);
   min-height:100vh;transition:background .2s,color .2s;}
+#app-wrapper{width:100%;}
 .topbar{display:flex;align-items:center;justify-content:space-between;
-  background:#1e293b;padding:10px 16px;border-bottom:2px solid #0f3460;
-  position:sticky;top:0;z-index:100;}
-.topbar h1{font-size:17px;color:#f97316;letter-spacing:.5px;}
-.topbar-right{display:flex;gap:8px;align-items:center;}
-.api-dot{width:9px;height:9px;border-radius:50%;background:#475569;
+  background:#1e293b;padding:clamp(4px,1vw,10px) clamp(6px,2vw,16px);
+  border-bottom:2px solid #0f3460;position:sticky;top:0;z-index:100;}
+.topbar-right{display:flex;gap:clamp(3px,1vw,8px);align-items:center;flex-wrap:wrap;}
+.api-dot{width:8px;height:8px;border-radius:50%;background:#475569;
   display:inline-block;transition:background .3s;}
-#status-bar{padding:7px 16px;font-size:13px;display:none;
-  border-bottom:1px solid var(--border);}
+#status-bar{padding:clamp(4px,1vw,7px) clamp(6px,2vw,16px);
+  font-size:clamp(13px,2.5vw,16px);display:none;border-bottom:1px solid var(--border);}
 .s-ok{background:var(--s-ok-bg);color:var(--s-ok-text);}
 .s-err{background:var(--s-err-bg);color:var(--s-err-text);}
-.pos-bar{background:var(--surface);padding:8px 16px;font-size:12px;
-  border-bottom:1px solid var(--border);min-height:34px;
-  display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
-.pos-chip{padding:2px 10px;border-radius:12px;font-size:12px;
-  font-weight:600;white-space:nowrap;}
+.pos-bar{background:var(--surface);padding:clamp(4px,1vw,8px) clamp(6px,2vw,16px);
+  font-size:clamp(13px,2.5vw,15px);border-bottom:1px solid var(--border);
+  min-height:28px;display:flex;flex-wrap:wrap;align-items:center;gap:clamp(3px,1vw,8px);}
+.pos-chip{padding:2px clamp(4px,1.5vw,10px);border-radius:12px;
+  font-size:clamp(13px,2.5vw,15px);font-weight:600;white-space:nowrap;}
 .chip-long{background:var(--chip-long-bg);color:var(--chip-long-text);
   border:1px solid var(--chip-long-border);}
 .chip-short{background:var(--chip-short-bg);color:var(--chip-short-text);
   border:1px solid var(--chip-short-border);}
-.cards-row{display:flex;gap:12px;padding:14px 16px;overflow-x:auto;}
+.cards-row{display:flex;gap:clamp(4px,1vw,8px);padding:clamp(4px,1vw,8px);overflow-x:auto;}
 .cards-row.vertical{flex-direction:column;overflow-x:visible;}
-.card{background:var(--surface);border-radius:10px;padding:12px;flex:1;
-  min-width:230px;max-width:290px;display:flex;flex-direction:column;gap:8px;
+.card{background:var(--surface);border-radius:8px;padding:clamp(4px,1vw,8px);flex:1;
+  min-width:0;max-width:290px;display:flex;flex-direction:column;gap:clamp(3px,0.8vw,6px);
   border:1px solid var(--border);transition:background .2s,border-color .2s;}
 .cards-row.vertical .card{max-width:100%;min-width:100%;}
-.card-title{font-size:14px;font-weight:bold;color:var(--text);}
-.card-sym{font-size:10px;color:var(--text-muted);white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;}
-.pos-badge{font-size:11px;font-weight:700;padding:3px 8px;
-  border-radius:4px;display:inline-block;}
+.card-title{font-size:clamp(13px,2.5vw,16px);font-weight:bold;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-sym{font-size:clamp(12px,2vw,14px);color:var(--text-dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pos-badge{font-size:clamp(13px,2.5vw,15px);font-weight:700;
+  padding:2px clamp(4px,1.5vw,8px);border-radius:4px;display:inline-block;}
 .badge-flat{background:var(--badge-flat-bg);color:var(--badge-flat-text);
   border:1px solid var(--badge-flat-border);}
 .badge-long{background:var(--badge-long-bg);color:var(--badge-long-text);}
 .badge-short{background:var(--badge-short-bg);color:var(--badge-short-text);}
-.btn-row{display:flex;gap:5px;flex-wrap:wrap;}
-button{border:none;border-radius:5px;cursor:pointer;font-size:12px;
-  padding:6px 11px;font-weight:600;transition:opacity .15s;}
+.btn-row{display:flex;gap:clamp(3px,0.8vw,5px);flex-wrap:wrap;}
+button{border:none;border-radius:4px;cursor:pointer;
+  font-size:clamp(13px,2.5vw,15px);
+  padding:clamp(3px,0.8vw,6px) clamp(5px,1.5vw,11px);
+  font-weight:600;transition:opacity .15s;}
 button:hover{opacity:.82;}
 button:disabled{opacity:.35;cursor:not-allowed;}
 .btn-long{background:#15803d;color:#fff;}
 .btn-short{background:#b91c1c;color:#fff;}
-.btn-close{background:#475569;color:#fff;width:100%;padding:8px;}
+.btn-close{background:#475569;color:#fff;width:100%;
+  padding:clamp(3px,0.8vw,5px);font-size:clamp(13px,2.5vw,15px);}
 .btn-half{background:#0e7490;color:#fff;}
 .btn-rev{background:#92400e;color:#fff;}
 .btn-add{background:#4c1d95;color:#fff;}
 .btn-lim{background:#1d4ed8;color:#fff;flex-shrink:0;}
 .btn-sl{background:#7c3aed;color:#fff;flex-shrink:0;}
 .btn-refresh{background:var(--btn-neutral-bg);color:var(--btn-neutral-text);
-  padding:5px 12px;font-size:12px;}
+  font-size:clamp(12px,2vw,14px);padding:clamp(2px,0.5vw,4px) clamp(4px,1vw,8px);}
 .btn-theme{background:var(--btn-neutral-bg);color:var(--btn-neutral-text);
-  padding:5px 10px;font-size:11px;border:1px solid rgba(255,255,255,.15);}
-.btn-settings{background:#1e40af;color:#e2e8f0;padding:5px 12px;font-size:12px;
-  text-decoration:none;border-radius:5px;font-weight:600;}
-.entry-sec,.exit-sec{display:flex;flex-direction:column;gap:6px;
-  padding:8px;border-radius:6px;}
+  padding:clamp(2px,0.5vw,4px) clamp(4px,1vw,7px);
+  font-size:clamp(12px,2vw,14px);border:1px solid rgba(255,255,255,.15);}
+.btn-settings{background:#1e40af;color:#e2e8f0;
+  padding:clamp(2px,0.5vw,4px) clamp(4px,1vw,7px);
+  font-size:clamp(12px,2vw,14px);text-decoration:none;border-radius:4px;font-weight:600;}
+.entry-sec,.exit-sec{display:flex;flex-direction:column;gap:clamp(3px,0.8vw,5px);
+  padding:clamp(3px,0.8vw,6px);border-radius:5px;}
 .entry-sec{background:var(--entry-bg);border:1px solid var(--entry-border);}
 .exit-sec{background:var(--exit-bg);border:1px solid var(--exit-border);}
 .pending-orders-sec{background:rgba(30,64,175,0.1);border:1px solid #1e40af;}
-.strike-nav{display:flex;align-items:center;justify-content:center;gap:4px;margin:8px 0;padding:6px;background:var(--surface);border-radius:5px;border:1px solid var(--border);}
-.btn-nav{background:#3b82f6;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;padding:4px 8px;font-weight:600;line-height:1;}
+.strike-nav{display:flex;align-items:center;justify-content:center;
+  gap:clamp(2px,0.5vw,4px);margin:clamp(2px,0.5vw,4px) 0;
+  padding:clamp(2px,0.5vw,4px);background:var(--surface);
+  border-radius:5px;border:1px solid var(--border);}
+.btn-nav{background:#3b82f6;color:#fff;border:none;border-radius:3px;cursor:pointer;
+  font-size:clamp(12px,2vw,14px);padding:clamp(2px,0.5vw,3px) clamp(3px,0.8vw,5px);
+  font-weight:600;line-height:1;}
 .btn-nav:hover{background:#2563eb;}
-.strike-display{font-weight:bold;color:var(--text);font-size:13px;min-width:50px;text-align:center;}
-.sec-label{font-size:10px;font-weight:700;letter-spacing:1px;
+.strike-display{font-weight:bold;color:var(--text);
+  font-size:clamp(13px,2.5vw,16px);min-width:clamp(25px,4vw,40px);text-align:center;}
+.sec-label{font-size:clamp(12px,2vw,14px);font-weight:700;letter-spacing:1px;
   color:var(--text-muted);text-transform:uppercase;}
-input[type="number"]{width:100%;padding:5px 8px;background:var(--input-bg);
-  border:1px solid var(--border);border-radius:4px;color:var(--text);
-  font-size:12px;transition:background .2s,border-color .2s;}
+input[type="number"]{width:100%;padding:clamp(3px,0.8vw,5px) clamp(4px,1vw,8px);
+  background:var(--input-bg);border:1px solid var(--border);border-radius:4px;
+  color:var(--text);font-size:clamp(13px,2.5vw,15px);
+  transition:background .2s,border-color .2s;}
 input[type="number"]::placeholder{color:var(--placeholder);}
-.input-row{display:flex;gap:5px;align-items:stretch;}
-.input-row input{flex:1;min-width:0;}
+.input-row{display:flex;gap:clamp(3px,0.8vw,5px);align-items:stretch;}
+.input-row input{flex:1;min-width:0;width:1px;}
 @media (max-width:640px){
   .cards-row{padding:10px;gap:10px;overflow-x:scroll;
     scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
@@ -326,7 +384,8 @@ input[type="number"]::placeholder{color:var(--placeholder);}
 _TRADING_JS = """\
 function applyTheme(t){
   document.body.classList.toggle('light',t==='light');
-  document.getElementById('theme-btn').textContent=t==='light'?'Dark':'Light';
+  document.getElementById('theme-btn').textContent=t==='light'?'\u2600':'\u263d';
+  document.getElementById('theme-btn').title=t==='light'?'Switch to Dark':'Switch to Light';
 }
 function toggleTheme(){
   const next=document.body.classList.contains('light')?'dark':'light';
@@ -335,7 +394,8 @@ function toggleTheme(){
 function applyLayout(l){
   const container=document.getElementById('cards-container');
   container.classList.toggle('vertical',l==='vertical');
-  document.getElementById('layout-btn').textContent=l==='vertical'?'Horizontal':'Vertical';
+  document.getElementById('layout-btn').textContent=l==='vertical'?'\u2b0c':'\u2b0d';
+  document.getElementById('layout-btn').title=l==='vertical'?'Switch to Horizontal':'Switch to Vertical';
 }
 function toggleLayout(){
   const container=document.getElementById('cards-container');
@@ -343,7 +403,10 @@ function toggleLayout(){
   localStorage.setItem('layout',next);applyLayout(next);
 }
 applyTheme(localStorage.getItem('theme')||'dark');
-applyLayout(localStorage.getItem('layout')||'horizontal');
+applyLayout(localStorage.getItem('layout')||'vertical');
+
+
+// width controlled by browser window resize
 
 function showStatus(msg,isErr){
   const bar=document.getElementById('status-bar');
@@ -365,11 +428,37 @@ async function refreshPositions(){
   }
 }
 
+let pendingPollInterval=null;
+
+async function syncAndRefreshPending(){
+  try{
+    await fetch('/api/sync_order_status',{method:'POST'});
+    await refreshPendingOrders();
+  }catch(e){
+    console.error('Sync failed:',e);
+  }
+}
+
+function startPendingOrderPolling(){
+  if(pendingPollInterval)return;
+  syncAndRefreshPending();
+  pendingPollInterval=setInterval(syncAndRefreshPending,2000);
+}
+
+function stopPendingOrderPolling(){
+  if(pendingPollInterval){
+    clearInterval(pendingPollInterval);
+    pendingPollInterval=null;
+  }
+}
+
 async function refreshPendingOrders(){
   try{
     const r=await fetch('/api/pending_orders');
     const orders=await r.json();
     renderPendingOrdersInCards(orders);
+    if(orders.length>0)startPendingOrderPolling();
+    else stopPendingOrderPolling();
   }catch(e){
     console.error('Failed to load pending orders:',e);
   }
@@ -560,7 +649,7 @@ def _card_html(label, sym, qty_lots, instrument_type):
         f'  </div>\n'
         f'  <div class="entry-sec" id="entry_{sym}">\n'
         f'    <div class="sec-label">Entry</div>\n'
-        f'    <input type="number" id="ep_{sym}" placeholder="Limit price  (blank = market)" step="0.05">\n'
+        f'    <input type="number" id="ep_{sym}" placeholder="Price (mkt if blank)" step="0.05">\n'
         f'    <div class="btn-row">\n'
         f'      <button class="btn-long" onclick="smartEntry(\'{sym}\',1)">LONG {qty_lots}L</button>\n'
         f'      <button class="btn-short" onclick="smartEntry(\'{sym}\',-1)">SHORT {qty_lots}L</button>\n'
@@ -568,14 +657,14 @@ def _card_html(label, sym, qty_lots, instrument_type):
         f'  </div>\n'
         f'  <div class="exit-sec" id="exit_{sym}">\n'
         f'    <div class="sec-label">Exit / Manage</div>\n'
-        f'    <button class="btn-close" onclick="smartClose(\'{sym}\')">CLOSE NOW (Market)</button>\n'
+        f'    <button class="btn-close" onclick="smartClose(\'{sym}\')">CLOSE (Market)</button>\n'
         f'    <div class="input-row">\n'
-        f'      <input type="number" id="lx_{sym}" placeholder="Limit exit price" step="0.05">\n'
+        f'      <input type="number" id="lx_{sym}" placeholder="Exit px" step="0.05">\n'
         f'      <button class="btn-lim" onclick="smartLimitExit(\'{sym}\')">LIMIT EXIT</button>\n'
         f'    </div>\n'
         f'    <div class="input-row">\n'
-        f'      <input type="number" id="slt_{sym}" placeholder="SL trigger" step="0.05">\n'
-        f'      <input type="number" id="sll_{sym}" placeholder="SL limit" step="0.05">\n'
+        f'      <input type="number" id="slt_{sym}" placeholder="Trigger" step="0.05">\n'
+        f'      <input type="number" id="sll_{sym}" placeholder="SL px" step="0.05">\n'
         f'      <button class="btn-sl" onclick="smartSL(\'{sym}\')">SET SL</button>\n'
         f'    </div>\n'
         f'  </div>\n'
@@ -599,14 +688,15 @@ def render_trading(cards, lot_sizes, symbols, qty_lots):
         '<title>Trading App</title>'
         '<style>' + _TRADING_CSS + '</style>'
         '</head><body>\n'
+        '<div id="app-wrapper">'
         '<div class="topbar">'
-        '<h1>Trading App</h1>'
+        ''
         '<div class="topbar-right">'
         '<span class="api-dot" id="api-dot" title="API status"></span>'
-        '<button class="btn-theme" id="theme-btn" onclick="toggleTheme()">Light</button>'
-        '<button class="btn-theme" id="layout-btn" onclick="toggleLayout()">Vertical</button>'
-        '<button class="btn-refresh" onclick="refreshPositions()">Refresh</button>'
-        '<a href="/settings" class="btn-settings">Settings</a>'
+        '<button class="btn-theme" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">\u263d</button>'
+        '<button class="btn-theme" id="layout-btn" onclick="toggleLayout()" title="Switch to Horizontal">\u2b0c</button>'
+        '<button class="btn-refresh" onclick="refreshPositions()" title="Refresh">\u21ba</button>'
+        '<a href="/settings" class="btn-settings" title="Settings">\u2699\ufe0f</a>'
         '</div></div>\n'
         '<div id="status-bar"></div>\n'
         '<div class="pos-bar" id="pos-bar">'
@@ -614,6 +704,7 @@ def render_trading(cards, lot_sizes, symbols, qty_lots):
         '</div>\n'
         '<div class="cards-row" id="cards-container">\n' +
         cards_html +
+        '</div>\n'
         '</div>\n'
         '<script>\n'
         'const LOT_SIZES=' + json.dumps(lot_sizes) + ';\n'
@@ -661,7 +752,7 @@ h2{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
   color:var(--text-muted);margin:20px 0 10px;}
 .field{margin-bottom:12px;}
 label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px;}
-input[type="text"],input[type="number"],select{
+input[type="text"],input[type="number"],input[type="date"],select{
   width:100%;padding:8px 10px;background:var(--input-bg);
   border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;
   transition:background .2s,border-color .2s;}
@@ -689,7 +780,54 @@ function toggleTheme(){
   const next=document.body.classList.contains('light')?'dark':'light';
   localStorage.setItem('theme',next);applyTheme(next);
 }
-applyTheme(localStorage.getItem('theme')||'dark');"""
+applyTheme(localStorage.getItem('theme')||'dark');
+
+// Date conversion for expiry fields
+function convertToExpiryFormat(prefix) {
+  const datePicker = document.getElementById(prefix + '_expiry_picker');
+  const textField = document.getElementById(prefix + '_expiry');
+  
+  if (!datePicker.value) {
+    textField.value = '';
+    return;
+  }
+  
+  const date = new Date(datePicker.value);
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
+                  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = months[date.getMonth()];
+  const year = date.getFullYear().toString().slice(-2);
+  
+  textField.value = day + month + year;
+}
+
+// Initialize date pickers with current expiry values
+function parseExpiryToDate(expiryStr) {
+  if (!expiryStr || expiryStr.length !== 7) return '';
+  
+  const day = expiryStr.substring(0, 2);
+  const monthStr = expiryStr.substring(2, 5);
+  const year = '20' + expiryStr.substring(5, 7);
+  
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
+                  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const monthNum = months.indexOf(monthStr) + 1;
+  
+  if (monthNum === 0) return '';
+  
+  return `${year}-${monthNum.toString().padStart(2, '0')}-${day}`;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const niftyExpiry = document.getElementById('nifty_expiry').value;
+  const bankniftyExpiry = document.getElementById('banknifty_expiry').value;
+  
+  document.getElementById('nifty_expiry_picker').value = parseExpiryToDate(niftyExpiry);
+  document.getElementById('banknifty_expiry_picker').value = parseExpiryToDate(bankniftyExpiry);
+});"""
 
 
 def render_settings(s, api_ok, openalgo_url):
@@ -715,8 +853,9 @@ def render_settings(s, api_ok, openalgo_url):
         '<form method="POST" action="/settings">\n'
         '<h2>NIFTY</h2>\n'
         '<div class="field"><label>Expiry</label>'
-        f'<input type="text" name="nifty_expiry" value="{n["expiry"]}" required>'
-        '<div class="hint">Format: DDMMMYY \u2014 e.g. 17FEB26</div></div>\n'
+        '<input type="date" id="nifty_expiry_picker" onchange="convertToExpiryFormat(\'nifty\')" style="margin-bottom: 8px;">'
+        f'<input type="text" name="nifty_expiry" id="nifty_expiry" value="{n["expiry"]}" readonly style="background: var(--hint); cursor: not-allowed;" required>'
+        '<div class="hint">Auto-converted from date picker above (DDMMMYY format)</div></div>\n'
         '<div class="row">'
         '<div class="field"><label>CE Strike</label>'
         f'<input type="text" name="nifty_strike_ce" value="{n["strike_ce"]}" required></div>'
@@ -728,8 +867,9 @@ def render_settings(s, api_ok, openalgo_url):
         '<div class="sep"></div>\n'
         '<h2>BANKNIFTY</h2>\n'
         '<div class="field"><label>Expiry</label>'
-        f'<input type="text" name="banknifty_expiry" value="{b["expiry"]}" required>'
-        '<div class="hint">Format: DDMMMYY \u2014 e.g. 24FEB26</div></div>\n'
+        '<input type="date" id="banknifty_expiry_picker" onchange="convertToExpiryFormat(\'banknifty\')" style="margin-bottom: 8px;">'
+        f'<input type="text" name="banknifty_expiry" id="banknifty_expiry" value="{b["expiry"]}" readonly style="background: var(--hint); cursor: not-allowed;" required>'
+        '<div class="hint">Auto-converted from date picker above (DDMMMYY format)</div></div>\n'
         '<div class="row">'
         '<div class="field"><label>CE Strike</label>'
         f'<input type="text" name="banknifty_strike_ce" value="{b["strike_ce"]}" required></div>'
@@ -758,6 +898,7 @@ def render_settings(s, api_ok, openalgo_url):
         f'<option value="vertical" {vert_sel}>Vertical (stacked)</option>'
         '</select>'
         '<div class="hint">How trading cards are arranged on screen</div></div>\n'
+        ''
         '<div class="actions">'
         '<a href="/" class="btn-back">Back</a>'
         '<button type="submit" class="btn-save">Save Settings</button>'
@@ -848,6 +989,9 @@ class _Handler(BaseHTTPRequestHandler):
 
             elif path == '/api/pending_orders':
                 self._send_json(get_pending_orders())
+
+            elif path == '/api/sync_order_status':
+                self._send_json(sync_order_status())
 
             else:
                 self._send_html('<h3>404 Not Found</h3>', 404)
