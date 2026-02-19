@@ -3,7 +3,7 @@
 Trading App — Standalone server
 Zero external dependencies — Python 3.8+ stdlib only.
 No pip installs needed: no Flask, no python-dotenv.
-Port: 5004  (override with PORT env var or .env PORT=xxxx)
+Port: 5003  (override with PORT env var or .env PORT=xxxx)
 """
 
 import os, json, socketserver, urllib.request, urllib.error
@@ -283,9 +283,10 @@ body.light {
   --exit-bg:rgba(185,28,28,0.06); --exit-border:#dc2626;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
 body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);
-  min-height:100vh;transition:background .2s,color .2s;}
-#app-wrapper{width:100%;}
+  transition:background .2s,color .2s;}
+#app-wrapper{width:100%;height:100%;overflow-y:auto;}
 .topbar{display:flex;align-items:center;justify-content:space-between;
   background:#1e293b;padding:clamp(4px,1vw,10px) clamp(6px,2vw,16px);
   border-bottom:2px solid #0f3460;position:sticky;top:0;z-index:100;}
@@ -384,7 +385,7 @@ input[type="number"]::placeholder{color:var(--placeholder);}
 _TRADING_JS = """\
 function applyTheme(t){
   document.body.classList.toggle('light',t==='light');
-  document.getElementById('theme-btn').textContent=t==='light'?'\u2600':'\u263d';
+  document.getElementById('theme-btn').textContent=t==='light'?'\u263d':'\u2600';
   document.getElementById('theme-btn').title=t==='light'?'Switch to Dark':'Switch to Light';
 }
 function toggleTheme(){
@@ -591,8 +592,17 @@ async function changeStrike(instrument, optionType, delta){
     });
     const d=await r.json();
     if(d.status==='success'){
-      // Quick reload - minimal delay
-      location.reload();
+      const card=document.getElementById('card_'+d.old_symbol);
+      if(card){
+        // Replace all references to old symbol with new symbol in card HTML
+        let newHTML=card.outerHTML.replaceAll(d.old_symbol,d.new_symbol);
+        // Update the strike display text
+        newHTML=newHTML.replace(
+          'id="strike_disp_'+d.new_symbol+'">'+d.old_strike,
+          'id="strike_disp_'+d.new_symbol+'">'+d.new_strike
+        );
+        card.outerHTML=newHTML;
+      }
     }else{
       showStatus('Strike update failed: '+(d.message||'Unknown'),true);
     }
@@ -1052,18 +1062,33 @@ class _Handler(BaseHTTPRequestHandler):
                 delta = int(data.get('delta', 0))
                 
                 settings = load_settings()
+                syms = build_symbols(settings)
                 
                 if instrument == 'nifty':
-                    current_strike = int(settings['nifty'][f'strike_{option_type}'])
-                    new_strike = current_strike + delta
+                    old_strike = int(settings['nifty'][f'strike_{option_type}'])
+                    new_strike = old_strike + delta
                     settings['nifty'][f'strike_{option_type}'] = str(new_strike)
+                    expiry = settings['nifty']['expiry']
+                    suffix = 'CE' if option_type == 'ce' else 'PE'
+                    old_symbol = f"NIFTY{expiry}{old_strike}{suffix}"
+                    new_symbol = f"NIFTY{expiry}{new_strike}{suffix}"
                 elif instrument == 'banknifty':
-                    current_strike = int(settings['banknifty'][f'strike_{option_type}'])
-                    new_strike = current_strike + delta
+                    old_strike = int(settings['banknifty'][f'strike_{option_type}'])
+                    new_strike = old_strike + delta
                     settings['banknifty'][f'strike_{option_type}'] = str(new_strike)
+                    expiry = settings['banknifty']['expiry']
+                    suffix = 'CE' if option_type == 'ce' else 'PE'
+                    old_symbol = f"BANKNIFTY{expiry}{old_strike}{suffix}"
+                    new_symbol = f"BANKNIFTY{expiry}{new_strike}{suffix}"
                 
                 save_settings(settings)
-                self._send_json({'status': 'success', 'new_strike': str(new_strike)})
+                self._send_json({
+                    'status': 'success',
+                    'old_strike': str(old_strike),
+                    'new_strike': str(new_strike),
+                    'old_symbol': old_symbol,
+                    'new_symbol': new_symbol
+                })
 
             else:
                 self._send_html('<h3>404 Not Found</h3>', 404)
@@ -1080,7 +1105,7 @@ class _ThreadingServer(socketserver.ThreadingMixIn, HTTPServer):
 # ── Entry point ──────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5004))
+    port = int(os.getenv('PORT', 5003))
     api_status = 'set' if OPENALGO_API_KEY else 'NOT SET \u2014 edit .env'
     print(f"Trading App  \u2192  http://localhost:{port}")
     print(f"OpenAlgo URL \u2192  {OPENALGO_URL}")
