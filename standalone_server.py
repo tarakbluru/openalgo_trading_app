@@ -602,6 +602,12 @@ async function changeStrike(instrument, optionType, delta){
           'id="strike_disp_'+d.new_symbol+'">'+d.new_strike
         );
         card.outerHTML=newHTML;
+        // Update LOT_SIZES so smartEntry works with the new symbol
+        LOT_SIZES[d.new_symbol]=LOT_SIZES[d.old_symbol];
+        delete LOT_SIZES[d.old_symbol];
+        // Update SYMBOLS so refreshPositions/renderCards targets the new symbol
+        const idx=SYMBOLS.indexOf(d.old_symbol);
+        if(idx!==-1)SYMBOLS[idx]=d.new_symbol;
       }
     }else{
       showStatus('Strike update failed: '+(d.message||'Unknown'),true);
