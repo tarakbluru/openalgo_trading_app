@@ -683,11 +683,12 @@ async function refreshMarketStatus() {
         _mktSinceTime = '';
       }
     }
+    const sinceStr = _mktSinceTime ? ' (' + _mktSinceTime + ')' : '';
     if (perm === 'Buy Allowed') {
-      badge.textContent = '\u25b2 BUY (' + _mktSinceTime + ')';
+      badge.textContent = '\u25b2 BUY' + sinceStr;
       badge.className   = 'mkt-badge mkt-buy';
     } else if (perm === 'Short Allowed') {
-      badge.textContent = '\u25bc SHORT (' + _mktSinceTime + ')';
+      badge.textContent = '\u25bc SHORT' + sinceStr;
       badge.className   = 'mkt-badge mkt-short';
     } else if (perm === 'No Trade Allowed') {
       badge.textContent = '\u2014 NO TRADE';
