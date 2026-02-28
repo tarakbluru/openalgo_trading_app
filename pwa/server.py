@@ -173,7 +173,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             pass  # Browser disconnected before we even fetched — harmless
 
         except Exception as exc:
-            msg = f'<h3>Proxy Error</h3><pre>{exc}</pre>\n<p>Is standalone_server.py running at {BACKEND_URL}?</p>'
+            msg = f'<h3>Proxy Error</h3><pre>{exc}</pre>\n<p>Is server.py running at {BACKEND_URL}? Try: <a href="{BACKEND_URL}/api/ping">{BACKEND_URL}/api/ping</a></p>'
             body = msg.encode('utf-8')
             self.send_response(502)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
@@ -207,7 +207,14 @@ if __name__ == '__main__':
 
     print(f"PWA Proxy  →  http://127.0.0.1:{PORT}")
     print(f"Backend    →  {BACKEND_URL}")
-    print(f"PWA files  →  {BASE_DIR}\n")
+    print(f"PWA files  →  {BASE_DIR}")
+    # Quick ping to confirm backend is up
+    try:
+        with urllib.request.urlopen(f"{BACKEND_URL}/api/ping", timeout=3) as r:
+            print(f"Backend    →  OK (ping responded {r.status})\n")
+    except Exception as e:
+        print(f"Backend    →  WARNING: backend not reachable — {e}")
+        print(f"             Start server.py first, then retry.\n")
 
     server = _ThreadingServer(('0.0.0.0', PORT), ProxyHandler)
     try:

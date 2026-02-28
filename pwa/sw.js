@@ -1,5 +1,5 @@
 // Service Worker for Trading App PWA
-const CACHE = 'trading-app-v1';
+const CACHE = 'trading-app-v2';
 
 // Pages to pre-cache on install (the "shell")
 const SHELL = ['/', '/settings', '/manifest.json', '/icon.svg'];
