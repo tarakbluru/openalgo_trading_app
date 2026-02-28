@@ -18,21 +18,17 @@
   --btn-neutral-bg:   #334155;
   --btn-neutral-text: #e2e8f0;
 
-  /* Status bars */
   --s-ok-bg:   #14532d; --s-ok-text:   #86efac;
   --s-err-bg:  #450a0a; --s-err-text:  #fca5a5;
 
-  /* Position chips */
   --chip-long-bg:     #14532d; --chip-long-text:  #86efac; --chip-long-border:  #166534;
   --chip-short-bg:    #450a0a; --chip-short-text: #fca5a5; --chip-short-border: #7f1d1d;
   --pnl-pos: #4ade80; --pnl-neg: #f87171;
 
-  /* Badges */
   --badge-flat-bg: #1e293b; --badge-flat-text: #64748b; --badge-flat-border: #334155;
   --badge-long-bg: #14532d; --badge-long-text: #86efac;
   --badge-short-bg: #450a0a; --badge-short-text: #fca5a5;
 
-  /* Entry / Exit panels */
   --entry-bg: rgba(21,128,61,0.12);  --entry-border: #166534;
   --exit-bg:  rgba(185,28,28,0.10); --exit-border:  #7f1d1d;
 }
@@ -66,38 +62,54 @@ body.light {
 
 /* ── Base ── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
   transition: background 0.2s, color 0.2s;
 }
+#app-wrapper { width: 100%; height: 100%; overflow-y: auto; }
 
-/* ── Top bar (stays dark for contrast in both modes) ── */
+/* ── Top bar ── */
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: #1e293b;
-  padding: 10px 16px;
+  padding: clamp(4px,1vw,10px) clamp(6px,2vw,16px);
   border-bottom: 2px solid #0f3460;
   position: sticky;
   top: 0;
   z-index: 100;
 }
-.topbar h1 { font-size: 17px; color: #f97316; letter-spacing: 0.5px; }
-.topbar-right { display: flex; gap: 8px; align-items: center; }
+.topbar-right { display: flex; gap: clamp(3px,1vw,8px); align-items: center; flex-wrap: wrap; }
 .api-dot {
-  width: 9px; height: 9px; border-radius: 50%;
+  width: 8px; height: 8px; border-radius: 50%;
   background: #475569; display: inline-block;
   transition: background 0.3s;
 }
 
+/* ── Market status badge ── */
+.mkt-status { display: flex; align-items: center; }
+.mkt-badge {
+  font-size: clamp(11px,1.8vw,13px); font-weight: 700;
+  padding: 2px clamp(4px,1vw,8px);
+  border-radius: 10px; letter-spacing: .5px; white-space: nowrap;
+}
+.mkt-buy     { background: #14532d; color: #86efac; border: 1px solid #166534; }
+.mkt-short   { background: #450a0a; color: #fca5a5; border: 1px solid #7f1d1d; }
+.mkt-notrade { background: #1e293b; color: #64748b; border: 1px solid #334155; }
+.mkt-na      { background: #1e293b; color: #475569; border: 1px solid #334155; }
+body.light .mkt-buy     { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+body.light .mkt-short   { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+body.light .mkt-notrade { background: #f1f5f9; color: #64748b; border-color: #cbd5e1; }
+body.light .mkt-na      { background: #f1f5f9; color: #94a3b8; border-color: #cbd5e1; }
+
 /* ── Status bar ── */
 #status-bar {
-  padding: 7px 16px;
-  font-size: 13px;
+  padding: clamp(4px,1vw,7px) clamp(6px,2vw,16px);
+  font-size: clamp(13px,2.5vw,16px);
   display: none;
   border-bottom: 1px solid var(--border);
 }
@@ -107,19 +119,19 @@ body {
 /* ── Positions bar ── */
 .pos-bar {
   background: var(--surface);
-  padding: 8px 16px;
-  font-size: 12px;
+  padding: clamp(4px,1vw,8px) clamp(6px,2vw,16px);
+  font-size: clamp(13px,2.5vw,15px);
   border-bottom: 1px solid var(--border);
-  min-height: 34px;
+  min-height: 28px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: clamp(3px,1vw,8px);
 }
 .pos-chip {
-  padding: 2px 10px;
+  padding: 2px clamp(4px,1.5vw,10px);
   border-radius: 12px;
-  font-size: 12px;
+  font-size: clamp(13px,2.5vw,15px);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -127,35 +139,52 @@ body {
 .chip-short { background: var(--chip-short-bg); color: var(--chip-short-text); border: 1px solid var(--chip-short-border); }
 
 /* ── Cards row ── */
-.cards-row {
-  display: flex;
-  gap: 12px;
-  padding: 14px 16px;
-  overflow-x: auto;
-}
+.cards-row { display: flex; gap: clamp(4px,1vw,8px); padding: clamp(4px,1vw,8px); overflow-x: auto; }
+.cards-row.vertical { flex-direction: column; overflow-x: visible; }
 .card {
   background: var(--surface);
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: clamp(4px,1vw,8px);
   flex: 1;
-  min-width: 230px;
-  max-width: 290px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  min-width: 0; max-width: 290px;
+  display: flex; flex-direction: column;
+  gap: clamp(3px,0.8vw,6px);
   border: 1px solid var(--border);
   transition: background 0.2s, border-color 0.2s;
 }
-.card-title { font-size: 14px; font-weight: bold; color: var(--text); }
-.card-sym {
-  font-size: 10px; color: var(--text-muted);
+.cards-row.vertical .card { max-width: 100%; min-width: 100%; }
+.card-title {
+  font-size: clamp(13px,2.5vw,16px); font-weight: bold; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card-sym {
+  font-size: clamp(12px,2vw,14px); color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Strike navigation ── */
+.strike-nav {
+  display: flex; align-items: center; justify-content: center;
+  gap: clamp(2px,0.5vw,4px); margin: clamp(2px,0.5vw,4px) 0;
+  padding: clamp(2px,0.5vw,4px);
+  background: var(--surface); border-radius: 5px; border: 1px solid var(--border);
+}
+.btn-nav {
+  background: #3b82f6; color: #fff; border: none; border-radius: 3px; cursor: pointer;
+  font-size: clamp(12px,2vw,14px); padding: clamp(2px,0.5vw,3px) clamp(3px,0.8vw,5px);
+  font-weight: 600; line-height: 1;
+}
+.btn-nav:hover { background: #2563eb; }
+.strike-display {
+  font-weight: bold; color: var(--text);
+  font-size: clamp(13px,2.5vw,16px);
+  min-width: clamp(25px,4vw,40px); text-align: center;
 }
 
 /* ── Position badge ── */
 .pos-badge {
-  font-size: 11px; font-weight: 700;
-  padding: 3px 8px; border-radius: 4px;
+  font-size: clamp(13px,2.5vw,15px); font-weight: 700;
+  padding: 2px clamp(4px,1.5vw,8px); border-radius: 4px;
   display: inline-block;
 }
 .badge-flat  { background: var(--badge-flat-bg);  color: var(--badge-flat-text);  border: 1px solid var(--badge-flat-border); }
@@ -163,75 +192,71 @@ body {
 .badge-short { background: var(--badge-short-bg); color: var(--badge-short-text); }
 
 /* ── Buttons ── */
-.btn-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.btn-row { display: flex; gap: clamp(3px,0.8vw,5px); flex-wrap: wrap; }
 button {
-  border: none; border-radius: 5px; cursor: pointer;
-  font-size: 12px; padding: 6px 11px; font-weight: 600;
-  transition: opacity 0.15s;
+  border: none; border-radius: 4px; cursor: pointer;
+  font-size: clamp(13px,2.5vw,15px);
+  padding: clamp(3px,0.8vw,6px) clamp(5px,1.5vw,11px);
+  font-weight: 600; transition: opacity 0.15s;
 }
 button:hover    { opacity: 0.82; }
 button:disabled { opacity: 0.35; cursor: not-allowed; }
-
-/* Semantic (keep constant across themes) */
 .btn-long    { background: #15803d; color: #fff; }
 .btn-short   { background: #b91c1c; color: #fff; }
-.btn-close   { background: #475569; color: #fff; width: 100%; padding: 8px; }
+.btn-close   { background: #475569; color: #fff; width: 100%; padding: clamp(3px,0.8vw,5px); }
 .btn-half    { background: #0e7490; color: #fff; }
 .btn-rev     { background: #92400e; color: #fff; }
 .btn-add     { background: #4c1d95; color: #fff; }
 .btn-lim     { background: #1d4ed8; color: #fff; flex-shrink: 0; }
 .btn-sl      { background: #7c3aed; color: #fff; flex-shrink: 0; }
-
-/* Neutral (theme-aware) */
 .btn-refresh {
-  background: var(--btn-neutral-bg);
-  color: var(--btn-neutral-text);
-  padding: 5px 12px; font-size: 12px;
+  background: var(--btn-neutral-bg); color: var(--btn-neutral-text);
+  font-size: clamp(12px,2vw,14px); padding: clamp(2px,0.5vw,4px) clamp(4px,1vw,8px);
 }
 .btn-theme {
-  background: var(--btn-neutral-bg);
-  color: var(--btn-neutral-text);
-  padding: 5px 10px; font-size: 11px;
-  border: 1px solid rgba(255,255,255,0.15);
+  background: var(--btn-neutral-bg); color: var(--btn-neutral-text);
+  padding: clamp(2px,0.5vw,4px) clamp(4px,1vw,7px);
+  font-size: clamp(12px,2vw,14px); border: 1px solid rgba(255,255,255,0.15);
 }
 .btn-settings {
   background: #1e40af; color: #e2e8f0;
-  padding: 5px 12px; font-size: 12px;
-  text-decoration: none; border-radius: 5px; font-weight: 600;
+  padding: clamp(2px,0.5vw,4px) clamp(4px,1vw,7px);
+  font-size: clamp(12px,2vw,14px);
+  text-decoration: none; border-radius: 4px; font-weight: 600;
 }
 
 /* ── Entry / Exit panels ── */
-.entry-sec, .exit-sec {
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 8px; border-radius: 6px;
+.entry-sec, .exit-sec, .pending-orders-sec {
+  display: flex; flex-direction: column;
+  gap: clamp(3px,0.8vw,5px);
+  padding: clamp(3px,0.8vw,6px); border-radius: 5px;
 }
-.entry-sec { background: var(--entry-bg); border: 1px solid var(--entry-border); }
-.exit-sec  { background: var(--exit-bg);  border: 1px solid var(--exit-border); }
+.entry-sec          { background: var(--entry-bg); border: 1px solid var(--entry-border); }
+.exit-sec           { background: var(--exit-bg);  border: 1px solid var(--exit-border); }
+.pending-orders-sec { background: rgba(30,64,175,0.1); border: 1px solid #1e40af; }
 .sec-label {
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 1px; color: var(--text-muted);
-  text-transform: uppercase;
+  font-size: clamp(12px,2vw,14px); font-weight: 700;
+  letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase;
 }
 
 /* ── Inputs ── */
 input[type="number"] {
-  width: 100%; padding: 5px 8px;
+  width: 100%; padding: clamp(3px,0.8vw,5px) clamp(4px,1vw,8px);
   background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
-  font-size: 12px;
+  font-size: clamp(13px,2.5vw,15px);
   transition: background 0.2s, border-color 0.2s;
 }
 input[type="number"]::placeholder { color: var(--placeholder); }
-.input-row { display: flex; gap: 5px; align-items: stretch; }
-.input-row input { flex: 1; min-width: 0; }
+.input-row { display: flex; gap: clamp(3px,0.8vw,5px); align-items: stretch; }
+.input-row input { flex: 1; min-width: 0; width: 1px; }
 
-/* ── Mobile: full-width swipeable cards ────────────────────────────────────── */
+/* ── Mobile: full-width swipeable cards ── */
 @media (max-width: 640px) {
   .cards-row {
-    padding: 10px;
-    gap: 10px;
+    padding: 10px; gap: 10px;
     overflow-x: scroll;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -245,7 +270,6 @@ input[type="number"]::placeholder { color: var(--placeholder); }
     max-width: none;
     scroll-snap-align: start;
   }
-  /* Larger tap targets on mobile */
   button { padding: 10px 14px; font-size: 13px; }
   .btn-close { padding: 12px; }
   input[type="number"] { padding: 8px 10px; font-size: 14px; }
@@ -254,34 +278,60 @@ input[type="number"]::placeholder { color: var(--placeholder); }
 </head>
 <body>
 
+<div id="app-wrapper">
 <div class="topbar">
-  <h1>Trading App</h1>
+  <div class="mkt-status">
+    <span class="mkt-badge mkt-na" id="mkt-badge">N/A</span>
+  </div>
   <div class="topbar-right">
     <span class="api-dot" id="api-dot" title="API status"></span>
-    <button class="btn-theme" id="theme-btn" onclick="toggleTheme()">Light</button>
-    <button class="btn-refresh" onclick="refreshPositions()">Refresh</button>
-    <a href="/settings" class="btn-settings">Settings</a>
+    <button class="btn-theme" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#9728;</button>
+    <button class="btn-theme" id="layout-btn" onclick="toggleLayout()" title="Switch layout">&#11052;</button>
+    <button class="btn-refresh" onclick="refreshPositions()" title="Refresh">&#8634;</button>
+    <a href="/settings" class="btn-settings" title="Settings">&#9881;&#65039;</a>
   </div>
 </div>
 
 <div id="status-bar"></div>
 
 <div class="pos-bar" id="pos-bar">
-  <span style="color:var(--text-muted)">Loading positions…</span>
+  <span style="color:var(--text-muted)">Loading positions&hellip;</span>
 </div>
 
-<div class="cards-row">
+<div class="cards-row" id="cards-container">
   {% for label, sym, ls in cards %}
+  {% if sym.startswith('BANKNIFTY') %}
+    {% set step_small = 100 %}
+    {% set step_big   = 500 %}
+    {% set instrument = 'banknifty' %}
+  {% else %}
+    {% set step_small = 50 %}
+    {% set step_big   = 100 %}
+    {% set instrument = 'nifty' %}
+  {% endif %}
+  {% set opt_type = 'ce' if 'CE' in sym else 'pe' %}
   <div class="card" id="card_{{ sym }}">
     <div class="card-title">{{ label }}</div>
-    <div class="card-sym" title="{{ sym }}">{{ sym }}</div>
-    <div class="pos-badge badge-flat" id="badge_{{ sym }}">loading…</div>
+    <div class="strike-nav">
+      <button class="btn-nav" onclick="changeStrike('{{ instrument }}','{{ opt_type }}',-{{ step_big }})" title="-{{ step_big }}">&#9668;&#9668;</button>
+      <button class="btn-nav" onclick="changeStrike('{{ instrument }}','{{ opt_type }}',-{{ step_small }})" title="-{{ step_small }}">&#9668;</button>
+      <span class="strike-display" id="strike_disp_{{ sym }}">{{ sym[-7:-2] }}</span>
+      <button class="btn-nav" onclick="changeStrike('{{ instrument }}','{{ opt_type }}',{{ step_small }})" title="+{{ step_small }}">&#9658;</button>
+      <button class="btn-nav" onclick="changeStrike('{{ instrument }}','{{ opt_type }}',{{ step_big }})" title="+{{ step_big }}">&#9658;&#9658;</button>
+    </div>
+    <div class="card-sym" title="{{ sym }}" id="sym_{{ sym }}">{{ sym }}</div>
+    <div class="pos-badge badge-flat" id="badge_{{ sym }}">loading&hellip;</div>
     <div class="btn-row" id="btns_{{ sym }}"></div>
+
+    <div id="pending_{{ sym }}" class="pending-orders-sec" style="display:none;">
+      <div class="sec-label">Pending Orders</div>
+      <div id="pending_list_{{ sym }}"></div>
+    </div>
 
     <div class="entry-sec" id="entry_{{ sym }}">
       <div class="sec-label">Entry</div>
       <input type="number" id="ep_{{ sym }}"
-             placeholder="Limit price  (blank = market)" step="0.05">
+             placeholder="Price (mkt if blank)" step="0.05">
       <div class="btn-row">
         <button class="btn-long"
                 onclick="smartEntry('{{ sym }}', 1)">LONG {{ qty_lots }}L</button>
@@ -293,18 +343,18 @@ input[type="number"]::placeholder { color: var(--placeholder); }
     <div class="exit-sec" id="exit_{{ sym }}">
       <div class="sec-label">Exit / Manage</div>
       <button class="btn-close"
-              onclick="smartClose('{{ sym }}')">CLOSE NOW (Market)</button>
+              onclick="smartClose('{{ sym }}')">CLOSE (Market)</button>
       <div class="input-row">
         <input type="number" id="lx_{{ sym }}"
-               placeholder="Limit exit price" step="0.05">
+               placeholder="Exit px" step="0.05">
         <button class="btn-lim"
                 onclick="smartLimitExit('{{ sym }}')">LIMIT EXIT</button>
       </div>
       <div class="input-row">
         <input type="number" id="slt_{{ sym }}"
-               placeholder="SL trigger" step="0.05">
+               placeholder="Trigger" step="0.05">
         <input type="number" id="sll_{{ sym }}"
-               placeholder="SL limit" step="0.05">
+               placeholder="SL px" step="0.05">
         <button class="btn-sl"
                 onclick="smartSL('{{ sym }}')">SET SL</button>
       </div>
@@ -312,6 +362,7 @@ input[type="number"]::placeholder { color: var(--placeholder); }
   </div>
   {% endfor %}
 </div>
+</div><!-- #app-wrapper -->
 
 <script>
 // Data injected server-side by Flask/Jinja2
@@ -322,15 +373,31 @@ const QTY_LOTS  = {{ qty_lots }};
 // ── Theme ──────────────────────────────────────────────────────────────────
 function applyTheme(t) {
   document.body.classList.toggle('light', t === 'light');
-  document.getElementById('theme-btn').textContent = t === 'light' ? 'Dark' : 'Light';
+  document.getElementById('theme-btn').textContent = t === 'light' ? '\u263d' : '\u2600';
+  document.getElementById('theme-btn').title = t === 'light' ? 'Switch to Dark' : 'Switch to Light';
 }
 function toggleTheme() {
   const next = document.body.classList.contains('light') ? 'dark' : 'light';
   localStorage.setItem('theme', next);
   applyTheme(next);
 }
-// Apply saved theme immediately (before paint)
+
+// ── Layout ──────────────────────────────────────────────────────────────────
+function applyLayout(l) {
+  const container = document.getElementById('cards-container');
+  container.classList.toggle('vertical', l === 'vertical');
+  document.getElementById('layout-btn').textContent = l === 'vertical' ? '\u2b0c' : '\u2b0d';
+  document.getElementById('layout-btn').title = l === 'vertical' ? 'Switch to Horizontal' : 'Switch to Vertical';
+}
+function toggleLayout() {
+  const container = document.getElementById('cards-container');
+  const next = container.classList.contains('vertical') ? 'horizontal' : 'vertical';
+  localStorage.setItem('layout', next);
+  applyLayout(next);
+}
+
 applyTheme(localStorage.getItem('theme') || 'dark');
+applyLayout(localStorage.getItem('layout') || 'vertical');
 
 // ── Status bar ─────────────────────────────────────────────────────────────
 function showStatus(msg, isErr) {
@@ -349,6 +416,7 @@ async function refreshPositions() {
     const data = await r.json();
     renderPosBar(data);
     renderCards(data);
+    await refreshPendingOrders();
     document.getElementById('api-dot').style.background = '#4ade80';
   } catch(e) {
     showStatus('Cannot reach server: ' + e.message, true);
@@ -356,6 +424,62 @@ async function refreshPositions() {
   }
 }
 
+// ── Pending Orders ──────────────────────────────────────────────────────────
+let pendingPollInterval = null;
+
+async function syncAndRefreshPending() {
+  try {
+    await fetch('/api/sync_order_status', { method: 'POST' });
+    await refreshPendingOrders();
+  } catch(e) {
+    console.error('Sync failed:', e);
+  }
+}
+
+function startPendingOrderPolling() {
+  if (pendingPollInterval) return;
+  syncAndRefreshPending();
+  pendingPollInterval = setInterval(syncAndRefreshPending, 5000);
+}
+
+function stopPendingOrderPolling() {
+  if (pendingPollInterval) {
+    clearInterval(pendingPollInterval);
+    pendingPollInterval = null;
+  }
+}
+
+async function refreshPendingOrders() {
+  try {
+    const r      = await fetch('/api/pending_orders');
+    const orders = await r.json();
+    renderPendingOrdersInCards(orders);
+    if (orders.length > 0) startPendingOrderPolling();
+    else stopPendingOrderPolling();
+  } catch(e) {
+    console.error('Failed to load pending orders:', e);
+  }
+}
+
+function renderPendingOrdersInCards(orders) {
+  SYMBOLS.forEach(sym => {
+    const symbolOrders = orders.filter(o => o.symbol === sym);
+    const container    = document.getElementById('pending_' + sym);
+    const list         = document.getElementById('pending_list_' + sym);
+    if (!symbolOrders.length) { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+    list.innerHTML = symbolOrders.map(o => {
+      const priceText = o.pricetype === 'MARKET' ? 'MKT'
+                      : (o.pricetype === 'SL' ? `SL@${o.price}` : o.price);
+      return `<div style="background:#1e40af;color:#e2e8f0;padding:4px 8px;border-radius:4px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">` +
+             `<span>${o.action} ${o.quantity} @ ${priceText}</span>` +
+             `<button onclick="cancelOrder('${o.order_id}')" style="background:#dc2626;border:none;color:white;cursor:pointer;font-size:10px;padding:2px 6px;border-radius:3px;">&times;</button>` +
+             `</div>`;
+    }).join('');
+  });
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
 function renderPosBar(positions) {
   const bar = document.getElementById('pos-bar');
   if (!positions.length) {
@@ -386,7 +510,6 @@ function renderCard(sym, qty) {
   const ls    = LOT_SIZES[sym];
   const badge = document.getElementById('badge_' + sym);
   const btns  = document.getElementById('btns_'  + sym);
-
   if (qty === 0) {
     badge.textContent = 'FLAT';
     badge.className   = 'pos-badge badge-flat';
@@ -397,7 +520,6 @@ function renderCard(sym, qty) {
     const sign = qty > 0 ? '+' : '';
     badge.textContent = `${dir} ${lots}L (${sign}${qty})`;
     badge.className   = `pos-badge badge-${dir.toLowerCase()}`;
-
     const half = Math.trunc(qty / 2);
     const rev  = -qty;
     const addQ = qty + (qty > 0 ? ls * QTY_LOTS : -(ls * QTY_LOTS));
@@ -412,7 +534,7 @@ function renderCard(sym, qty) {
 async function sendOrder(payload) {
   const allBtns = document.querySelectorAll('button');
   allBtns.forEach(b => b.disabled = true);
-  showStatus('Sending order…', false);
+  showStatus('Sending order\u2026', false);
   try {
     const r = await fetch('/api/smart_order', {
       method:  'POST',
@@ -421,7 +543,7 @@ async function sendOrder(payload) {
     });
     const d = await r.json();
     if (d.status === 'success') {
-      const detail = d.orderid ? ` — ID: ${d.orderid}`
+      const detail = d.orderid ? ` \u2014 ID: ${d.orderid}`
                    : d.message ? `: ${d.message}` : '';
       showStatus('Order placed' + detail, false);
       setTimeout(refreshPositions, 1500);
@@ -438,7 +560,6 @@ async function sendOrder(payload) {
 function smartOrder(sym, targetPos) {
   sendOrder({ symbol: sym, target_position: targetPos, pricetype: 'MARKET' });
 }
-
 function smartEntry(sym, direction) {
   const target   = direction * LOT_SIZES[sym] * QTY_LOTS;
   const priceVal = document.getElementById('ep_' + sym).value.trim();
@@ -447,18 +568,14 @@ function smartEntry(sym, direction) {
   else
     sendOrder({ symbol: sym, target_position: target, pricetype: 'MARKET' });
 }
-
 function smartClose(sym) {
   sendOrder({ symbol: sym, target_position: 0, pricetype: 'MARKET' });
 }
-
 function smartLimitExit(sym) {
   const price = document.getElementById('lx_' + sym).value.trim();
-  if (!price || parseFloat(price) <= 0)
-    { showStatus('Enter a limit exit price first', true); return; }
+  if (!price || parseFloat(price) <= 0) { showStatus('Enter a limit exit price first', true); return; }
   sendOrder({ symbol: sym, target_position: 0, pricetype: 'LIMIT', price });
 }
-
 function smartSL(sym) {
   const trig = document.getElementById('slt_' + sym).value.trim();
   const lim  = document.getElementById('sll_' + sym).value.trim();
@@ -467,6 +584,98 @@ function smartSL(sym) {
   sendOrder({ symbol: sym, target_position: 0, pricetype: 'SL',
               price: lim, trigger_price: trig });
 }
+
+// ── Strike navigation ───────────────────────────────────────────────────────
+async function changeStrike(instrument, optionType, delta) {
+  try {
+    const r = await fetch('/api/update_strike', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ instrument, option_type: optionType, delta })
+    });
+    const d = await r.json();
+    if (d.status === 'success') {
+      const card = document.getElementById('card_' + d.old_symbol);
+      if (card) {
+        // Replace all symbol references in card HTML then fix strike display text
+        let newHTML = card.outerHTML.replaceAll(d.old_symbol, d.new_symbol);
+        newHTML = newHTML.replace(
+          'id="strike_disp_' + d.new_symbol + '">' + d.old_strike,
+          'id="strike_disp_' + d.new_symbol + '">' + d.new_strike
+        );
+        card.outerHTML = newHTML;
+        LOT_SIZES[d.new_symbol] = LOT_SIZES[d.old_symbol];
+        delete LOT_SIZES[d.old_symbol];
+        const idx = SYMBOLS.indexOf(d.old_symbol);
+        if (idx !== -1) SYMBOLS[idx] = d.new_symbol;
+      }
+    } else {
+      showStatus('Strike update failed: ' + (d.message || 'Unknown'), true);
+    }
+  } catch(e) {
+    showStatus('Network error: ' + e.message, true);
+  }
+}
+
+// ── Cancel order ────────────────────────────────────────────────────────────
+async function cancelOrder(orderId) {
+  if (!confirm('Cancel this order?')) return;
+  try {
+    const r = await fetch('/api/cancel_order', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ order_id: orderId })
+    });
+    const d = await r.json();
+    if (d.status === 'success') {
+      showStatus('Order cancelled', false);
+      setTimeout(() => { refreshPositions(); refreshPendingOrders(); }, 1000);
+    } else {
+      showStatus('Cancel failed: ' + (d.message || 'Unknown error'), true);
+    }
+  } catch(e) {
+    showStatus('Network error: ' + e.message, true);
+  }
+}
+
+// ── Market status ───────────────────────────────────────────────────────────
+let _mktLastPerm  = '';
+let _mktSinceTime = '';
+async function refreshMarketStatus() {
+  const badge = document.getElementById('mkt-badge');
+  if (!badge) return;
+  try {
+    const r    = await fetch('http://127.0.0.1:5002/api/status');
+    const d    = await r.json();
+    const perm = d.trade_permission || '';
+    if (perm !== _mktLastPerm) {
+      _mktLastPerm = perm;
+      if (perm === 'Buy Allowed' || perm === 'Short Allowed') {
+        _mktSinceTime = new Date().toTimeString().slice(0, 5);
+      } else {
+        _mktSinceTime = '';
+      }
+    }
+    if (perm === 'Buy Allowed') {
+      badge.textContent = '\u25b2 BUY (' + _mktSinceTime + ')';
+      badge.className   = 'mkt-badge mkt-buy';
+    } else if (perm === 'Short Allowed') {
+      badge.textContent = '\u25bc SHORT (' + _mktSinceTime + ')';
+      badge.className   = 'mkt-badge mkt-short';
+    } else if (perm === 'No Trade Allowed') {
+      badge.textContent = '\u2014 NO TRADE';
+      badge.className   = 'mkt-badge mkt-notrade';
+    } else {
+      badge.textContent = 'N/A';
+      badge.className   = 'mkt-badge mkt-na';
+    }
+  } catch(e) {
+    badge.textContent = 'N/A';
+    badge.className   = 'mkt-badge mkt-na';
+  }
+}
+refreshMarketStatus();
+setInterval(refreshMarketStatus, 10000);
 
 // Auto-load on page open
 refreshPositions();

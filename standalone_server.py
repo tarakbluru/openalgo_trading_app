@@ -33,8 +33,9 @@ _load_env()
 
 SETTINGS_FILE    = os.path.join(BASE_DIR, 'data', 'settings.json')
 ORDERS_FILE      = os.path.join(BASE_DIR, 'data', 'orders.json')
-OPENALGO_URL     = os.getenv('OPENALGO_URL', 'http://localhost:5000/api/v1').rstrip('/')
-OPENALGO_API_KEY = os.getenv('OPENALGO_API_KEY', '')
+OPENALGO_URL      = os.getenv('OPENALGO_URL', 'http://localhost:5000/api/v1').rstrip('/')
+OPENALGO_API_KEY  = os.getenv('OPENALGO_API_KEY', '')
+MARKET_STATUS_URL = os.getenv('MARKET_STATUS_URL', 'http://host.docker.internal:5002/api/status')
 
 DEFAULT_SETTINGS = {
     "nifty":     {"expiry": "17FEB26", "strike_ce": "25700", "strike_pe": "25600", "lot_size": 65},
@@ -185,6 +186,16 @@ def api_post(endpoint, data):
     except urllib.error.HTTPError as e:
         try:    return json.loads(e.read().decode('utf-8'))
         except: return {"status": "error", "message": f"HTTP {e.code}: {e.reason}"}
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
+
+
+def get_market_status():
+    req = urllib.request.Request(MARKET_STATUS_URL)
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            text = resp.read().decode('utf-8')
+            return json.loads(text) if text.strip() else {"status": "error", "message": "Empty response"}
     except Exception as exc:
         return {"status": "error", "message": str(exc)}
 
@@ -370,6 +381,17 @@ input[type="number"]{width:100%;padding:clamp(3px,0.8vw,5px) clamp(4px,1vw,8px);
 input[type="number"]::placeholder{color:var(--placeholder);}
 .input-row{display:flex;gap:clamp(3px,0.8vw,5px);align-items:stretch;}
 .input-row input{flex:1;min-width:0;width:1px;}
+.mkt-status{display:flex;align-items:center;}
+.mkt-badge{font-size:clamp(11px,1.8vw,13px);font-weight:700;padding:2px clamp(4px,1vw,8px);
+  border-radius:10px;letter-spacing:.5px;white-space:nowrap;}
+.mkt-buy{background:#14532d;color:#86efac;border:1px solid #166534;}
+.mkt-short{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;}
+.mkt-notrade{background:#1e293b;color:#64748b;border:1px solid #334155;}
+.mkt-na{background:#1e293b;color:#475569;border:1px solid #334155;}
+body.light .mkt-buy{background:#dcfce7;color:#166534;border-color:#bbf7d0;}
+body.light .mkt-short{background:#fee2e2;color:#991b1b;border-color:#fecaca;}
+body.light .mkt-notrade{background:#f1f5f9;color:#64748b;border-color:#cbd5e1;}
+body.light .mkt-na{background:#f1f5f9;color:#94a3b8;border-color:#cbd5e1;}
 @media (max-width:640px){
   .cards-row{padding:10px;gap:10px;overflow-x:scroll;
     scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
@@ -443,7 +465,7 @@ async function syncAndRefreshPending(){
 function startPendingOrderPolling(){
   if(pendingPollInterval)return;
   syncAndRefreshPending();
-  pendingPollInterval=setInterval(syncAndRefreshPending,2000);
+  pendingPollInterval=setInterval(syncAndRefreshPending,5000);
 }
 
 function stopPendingOrderPolling(){
@@ -635,6 +657,39 @@ async function cancelOrder(orderId){
     showStatus('Network error: '+e.message,true);
   }
 }
+let _mktLastPerm='';
+let _mktSinceTime='';
+async function refreshMarketStatus(){
+  const badge=document.getElementById('mkt-badge');
+  if(!badge)return;
+  try{
+    const r=await fetch('http://127.0.0.1:5002/api/status');
+    const d=await r.json();
+    const perm=d.trade_permission||'';
+    if(perm!==_mktLastPerm){
+      _mktLastPerm=perm;
+      if(perm==='Buy Allowed'||perm==='Short Allowed'){
+        const now=new Date();
+        _mktSinceTime=now.toTimeString().slice(0,5);
+      }else{
+        _mktSinceTime='';
+      }
+    }
+    if(perm==='Buy Allowed'){
+      badge.textContent='\u25b2 BUY ('+_mktSinceTime+')';badge.className='mkt-badge mkt-buy';
+    }else if(perm==='Short Allowed'){
+      badge.textContent='\u25bc SHORT ('+_mktSinceTime+')';badge.className='mkt-badge mkt-short';
+    }else if(perm==='No Trade Allowed'){
+      badge.textContent='\u2014 NO TRADE';badge.className='mkt-badge mkt-notrade';
+    }else{
+      badge.textContent='N/A';badge.className='mkt-badge mkt-na';
+    }
+  }catch(e){
+    badge.textContent='N/A';badge.className='mkt-badge mkt-na';
+  }
+}
+refreshMarketStatus();
+setInterval(refreshMarketStatus,10000);
 refreshPositions();"""
 
 
@@ -706,7 +761,7 @@ def render_trading(cards, lot_sizes, symbols, qty_lots):
         '</head><body>\n'
         '<div id="app-wrapper">'
         '<div class="topbar">'
-        ''
+        '<div class="mkt-status"><span class="mkt-badge mkt-na" id="mkt-badge">N/A</span></div>'
         '<div class="topbar-right">'
         '<span class="api-dot" id="api-dot" title="API status"></span>'
         '<button class="btn-theme" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">\u263d</button>'
@@ -774,6 +829,8 @@ input[type="text"],input[type="number"],input[type="date"],select{
   transition:background .2s,border-color .2s;}
 input:focus,select:focus{outline:none;border-color:#3b82f6;}
 select option{background:var(--input-bg);color:var(--text);}
+input[type="date"]{color-scheme:dark;}
+body.light input[type="date"]{color-scheme:light;}
 .row{display:flex;gap:10px;}
 .row .field{flex:1;}
 .hint{font-size:11px;color:var(--hint);margin-top:3px;}
@@ -801,22 +858,11 @@ applyTheme(localStorage.getItem('theme')||'dark');
 // Date conversion for expiry fields
 function convertToExpiryFormat(prefix) {
   const datePicker = document.getElementById(prefix + '_expiry_picker');
-  const textField = document.getElementById(prefix + '_expiry');
-  
-  if (!datePicker.value) {
-    textField.value = '';
-    return;
-  }
-  
-  const date = new Date(datePicker.value);
-  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
-                  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = months[date.getMonth()];
-  const year = date.getFullYear().toString().slice(-2);
-  
-  textField.value = day + month + year;
+  const textField  = document.getElementById(prefix + '_expiry');
+  if (!datePicker.value) { textField.value = ''; return; }
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const [y, m, d] = datePicker.value.split('-');   // "2026-02-17" → no timezone shift
+  textField.value  = d + months[parseInt(m, 10) - 1] + y.slice(-2);
 }
 
 // Initialize date pickers with current expiry values
@@ -869,9 +915,8 @@ def render_settings(s, api_ok, openalgo_url):
         '<form method="POST" action="/settings">\n'
         '<h2>NIFTY</h2>\n'
         '<div class="field"><label>Expiry</label>'
-        '<input type="date" id="nifty_expiry_picker" onchange="convertToExpiryFormat(\'nifty\')" style="margin-bottom: 8px;">'
-        f'<input type="text" name="nifty_expiry" id="nifty_expiry" value="{n["expiry"]}" readonly style="background: var(--hint); cursor: not-allowed;" required>'
-        '<div class="hint">Auto-converted from date picker above (DDMMMYY format)</div></div>\n'
+        '<input type="date" id="nifty_expiry_picker" onchange="convertToExpiryFormat(\'nifty\')" required>'
+        f'<input type="hidden" name="nifty_expiry" id="nifty_expiry" value="{n["expiry"]}"></div>\n'
         '<div class="row">'
         '<div class="field"><label>CE Strike</label>'
         f'<input type="text" name="nifty_strike_ce" value="{n["strike_ce"]}" required></div>'
@@ -883,9 +928,8 @@ def render_settings(s, api_ok, openalgo_url):
         '<div class="sep"></div>\n'
         '<h2>BANKNIFTY</h2>\n'
         '<div class="field"><label>Expiry</label>'
-        '<input type="date" id="banknifty_expiry_picker" onchange="convertToExpiryFormat(\'banknifty\')" style="margin-bottom: 8px;">'
-        f'<input type="text" name="banknifty_expiry" id="banknifty_expiry" value="{b["expiry"]}" readonly style="background: var(--hint); cursor: not-allowed;" required>'
-        '<div class="hint">Auto-converted from date picker above (DDMMMYY format)</div></div>\n'
+        '<input type="date" id="banknifty_expiry_picker" onchange="convertToExpiryFormat(\'banknifty\')" required>'
+        f'<input type="hidden" name="banknifty_expiry" id="banknifty_expiry" value="{b["expiry"]}"></div>\n'
         '<div class="row">'
         '<div class="field"><label>CE Strike</label>'
         f'<input type="text" name="banknifty_strike_ce" value="{b["strike_ce"]}" required></div>'
@@ -1008,6 +1052,9 @@ class _Handler(BaseHTTPRequestHandler):
 
             elif path == '/api/sync_order_status':
                 self._send_json(sync_order_status())
+
+            elif path == '/api/market_status':
+                self._send_json(get_market_status())
 
             else:
                 self._send_html('<h3>404 Not Found</h3>', 404)

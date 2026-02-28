@@ -98,6 +98,7 @@ label  { display: block; font-size: 12px; color: var(--text-dim); margin-bottom:
 
 input[type="text"],
 input[type="number"],
+input[type="date"],
 select {
   width: 100%; padding: 8px 10px;
   background: var(--input-bg);
@@ -107,6 +108,9 @@ select {
 }
 input:focus, select:focus { outline: none; border-color: #3b82f6; }
 select option { background: var(--input-bg); color: var(--text); }
+/* Make the native date-picker calendar icon visible on dark background */
+input[type="date"] { color-scheme: dark; }
+body.light input[type="date"] { color-scheme: light; }
 
 .row { display: flex; gap: 10px; }
 .row .field { flex: 1; }
@@ -161,8 +165,8 @@ select option { background: var(--input-bg); color: var(--text); }
     <h2>NIFTY</h2>
     <div class="field">
       <label>Expiry</label>
-      <input type="text" name="nifty_expiry" value="{{ s.nifty.expiry }}" required>
-      <div class="hint">Format: DDMMMYY — e.g. 17FEB26</div>
+      <input type="date" id="nifty_expiry_picker" onchange="convertToExpiryFormat('nifty')" required>
+      <input type="hidden" name="nifty_expiry" id="nifty_expiry" value="{{ s.nifty.expiry }}">
     </div>
     <div class="row">
       <div class="field">
@@ -183,8 +187,8 @@ select option { background: var(--input-bg); color: var(--text); }
     <h2>BANKNIFTY</h2>
     <div class="field">
       <label>Expiry</label>
-      <input type="text" name="banknifty_expiry" value="{{ s.banknifty.expiry }}" required>
-      <div class="hint">Format: DDMMMYY — e.g. 24FEB26</div>
+      <input type="date" id="banknifty_expiry_picker" onchange="convertToExpiryFormat('banknifty')" required>
+      <input type="hidden" name="banknifty_expiry" id="banknifty_expiry" value="{{ s.banknifty.expiry }}">
     </div>
     <div class="row">
       <div class="field">
@@ -225,6 +229,23 @@ select option { background: var(--input-bg); color: var(--text); }
       </div>
     </div>
 
+    <div class="sep"></div>
+    <h2>User Interface</h2>
+    <div class="field">
+      <label>Cards Layout</label>
+      <select name="cards_layout">
+        <option value="horizontal"
+          {% if s.ui.cards_layout == 'horizontal' %}selected{% endif %}>
+          Horizontal (side by side)
+        </option>
+        <option value="vertical"
+          {% if s.ui.cards_layout == 'vertical' %}selected{% endif %}>
+          Vertical (stacked)
+        </option>
+      </select>
+      <div class="hint">Default layout — also overridable via the layout toggle on the trading page</div>
+    </div>
+
     <div class="actions">
       <a href="/" class="btn-back">Back</a>
       <button type="submit" class="btn-save">Save Settings</button>
@@ -244,6 +265,42 @@ function toggleTheme() {
   applyTheme(next);
 }
 applyTheme(localStorage.getItem('theme') || 'dark');
+
+// ── Date conversion for expiry fields ──────────────────────────────────────
+function convertToExpiryFormat(prefix) {
+  const datePicker = document.getElementById(prefix + '_expiry_picker');
+  const textField  = document.getElementById(prefix + '_expiry');
+  if (!datePicker.value) { textField.value = ''; return; }
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const [y, m, d] = datePicker.value.split('-');   // "2026-02-17" → no timezone shift
+  textField.value  = d + months[parseInt(m, 10) - 1] + y.slice(-2);
+}
+
+// ── Initialize date pickers with current expiry values ──────────────────────
+function parseExpiryToDate(expiryStr) {
+  if (!expiryStr || expiryStr.length !== 7) return '';
+  
+  const day = expiryStr.substring(0, 2);
+  const monthStr = expiryStr.substring(2, 5);
+  const year = '20' + expiryStr.substring(5, 7);
+  
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
+                  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const monthNum = months.indexOf(monthStr) + 1;
+  
+  if (monthNum === 0) return '';
+  
+  return `${year}-${monthNum.toString().padStart(2, '0')}-${day}`;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const niftyExpiry = document.getElementById('nifty_expiry').value;
+  const bankniftyExpiry = document.getElementById('banknifty_expiry').value;
+  
+  document.getElementById('nifty_expiry_picker').value = parseExpiryToDate(niftyExpiry);
+  document.getElementById('banknifty_expiry_picker').value = parseExpiryToDate(bankniftyExpiry);
+});
 </script>
 </body>
 </html>
