@@ -412,15 +412,19 @@ function showStatus(msg, isErr) {
 // ── Positions ──────────────────────────────────────────────────────────────
 async function refreshPositions() {
   try {
-    const r    = await fetch('/api/positions');
-    const data = await r.json();
+    const r   = await fetch('/api/positions');
+    const res = await r.json();
+    const data = res.data || [];
     renderPosBar(data);
     renderCards(data);
     await refreshPendingOrders();
-    document.getElementById('api-dot').style.background = '#4ade80';
+    // Green = Flask + OpenAlgo both reachable; Red = OpenAlgo down
+    document.getElementById('api-dot').style.background = res.api_ok ? '#4ade80' : '#f87171';
+    document.getElementById('api-dot').title = res.api_ok ? 'OpenAlgo: connected' : 'OpenAlgo: unreachable';
   } catch(e) {
     showStatus('Cannot reach server: ' + e.message, true);
     document.getElementById('api-dot').style.background = '#f87171';
+    document.getElementById('api-dot').title = 'Flask: unreachable';
   }
 }
 

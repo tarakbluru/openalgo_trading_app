@@ -9,6 +9,7 @@ import os
 import json
 import datetime
 import time
+import logging
 import urllib.request
 import urllib.error
 
@@ -20,6 +21,24 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'))
+
+
+@app.after_request
+def no_cache(response):
+    """Prevent browsers and proxies from caching dynamic content."""
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma']        = 'no-cache'
+    response.headers['Expires']       = '0'
+    return response
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s  %(levelname)s  %(message)s',
+    datefmt='%H:%M:%S'
+)
+log = logging.getLogger(__name__)
+logging.getLogger('werkzeug').setLevel(logging.ERROR)   # silence Werkzeug access/startup noise
 
 SETTINGS_FILE     = os.path.join(BASE_DIR, 'data', 'settings.json')
 ORDERS_FILE       = os.path.join(BASE_DIR, 'data', 'orders.json')
@@ -185,6 +204,12 @@ def get_positions():
     return []
 
 
+def ping_openalgo():
+    """Ping OpenAlgo to check connectivity and API key validity."""
+    result = api_post('ping', {"apikey": OPENALGO_API_KEY})
+    return result.get('status') == 'success'
+
+
 def get_position_qty(symbol):
     """Net qty for a symbol: positive=long, negative=short, 0=flat."""
     for pos in get_positions():
@@ -302,9 +327,16 @@ def update_settings():
     return redirect(url_for('index'))
 
 
+@app.route('/api/ping')
+def api_ping():
+    port = request.environ.get('REMOTE_PORT', '?')
+    log.info("PING  ←  %s:%s", request.remote_addr, port)
+    return jsonify({"status": "ok"})
+
+
 @app.route('/api/positions')
 def api_positions():
-    return jsonify(get_positions())
+    return jsonify({"api_ok": ping_openalgo(), "data": get_positions()})
 
 
 @app.route('/api/pending_orders')
