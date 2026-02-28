@@ -208,6 +208,12 @@ def get_positions():
     return []
 
 
+def ping_openalgo():
+    """Ping OpenAlgo to check connectivity and API key validity."""
+    result = api_post('ping', {"apikey": OPENALGO_API_KEY})
+    return result.get('status') == 'success'
+
+
 def get_position_qty(symbol):
     for pos in get_positions():
         if pos.get('symbol') == symbol:
@@ -441,13 +447,16 @@ function showStatus(msg,isErr){
 async function refreshPositions(){
   try{
     const r=await fetch('/api/positions');
-    const data=await r.json();
+    const res=await r.json();
+    const data=res.data||[];
     renderPosBar(data);renderCards(data);
     await refreshPendingOrders();
-    document.getElementById('api-dot').style.background='#4ade80';
+    document.getElementById('api-dot').style.background=res.api_ok?'#4ade80':'#f87171';
+    document.getElementById('api-dot').title=res.api_ok?'OpenAlgo: connected':'OpenAlgo: unreachable';
   }catch(e){
     showStatus('Cannot reach server: '+e.message,true);
     document.getElementById('api-dot').style.background='#f87171';
+    document.getElementById('api-dot').title='Server: unreachable';
   }
 }
 
@@ -657,6 +666,23 @@ async function cancelOrder(orderId){
     showStatus('Network error: '+e.message,true);
   }
 }
+async function fetchPermissionSinceTime(perm){
+  try{
+    const r=await fetch('http://127.0.0.1:5002/api/history');
+    const history=await r.json();
+    const entries=history.filter(e=>e&&e.timestamp&&e.trade_permission);
+    if(!entries.length)return '';
+    for(let i=entries.length-1;i>=0;i--){
+      if(entries[i].trade_permission!==perm){
+        const start=entries[i+1];
+        return start?start.timestamp.slice(0,5):'';
+      }
+    }
+    return entries[0].timestamp.slice(0,5);
+  }catch(e){
+    return '';
+  }
+}
 let _mktLastPerm='';
 let _mktSinceTime='';
 async function refreshMarketStatus(){
@@ -669,16 +695,16 @@ async function refreshMarketStatus(){
     if(perm!==_mktLastPerm){
       _mktLastPerm=perm;
       if(perm==='Buy Allowed'||perm==='Short Allowed'){
-        const now=new Date();
-        _mktSinceTime=now.toTimeString().slice(0,5);
+        _mktSinceTime=await fetchPermissionSinceTime(perm);
       }else{
         _mktSinceTime='';
       }
     }
+    const sinceStr=_mktSinceTime?' ('+_mktSinceTime+')':'';
     if(perm==='Buy Allowed'){
-      badge.textContent='\u25b2 BUY ('+_mktSinceTime+')';badge.className='mkt-badge mkt-buy';
+      badge.textContent='\u25b2 BUY'+sinceStr;badge.className='mkt-badge mkt-buy';
     }else if(perm==='Short Allowed'){
-      badge.textContent='\u25bc SHORT ('+_mktSinceTime+')';badge.className='mkt-badge mkt-short';
+      badge.textContent='\u25bc SHORT'+sinceStr;badge.className='mkt-badge mkt-short';
     }else if(perm==='No Trade Allowed'){
       badge.textContent='\u2014 NO TRADE';badge.className='mkt-badge mkt-notrade';
     }else{
@@ -999,6 +1025,9 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
         self.end_headers()
         self.wfile.write(body)
 
@@ -1007,6 +1036,9 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
         self.end_headers()
         self.wfile.write(body)
 
@@ -1044,14 +1076,15 @@ class _Handler(BaseHTTPRequestHandler):
                 s = load_settings()
                 self._send_html(render_settings(s, bool(OPENALGO_API_KEY), OPENALGO_URL))
 
+            elif path == '/api/ping':
+                print(f"  PING  \u2190  {self.client_address[0]}:{self.client_address[1]}")
+                self._send_json({"status": "ok"})
+
             elif path == '/api/positions':
-                self._send_json(get_positions())
+                self._send_json({"api_ok": ping_openalgo(), "data": get_positions()})
 
             elif path == '/api/pending_orders':
                 self._send_json(get_pending_orders())
-
-            elif path == '/api/sync_order_status':
-                self._send_json(sync_order_status())
 
             elif path == '/api/market_status':
                 self._send_json(get_market_status())
@@ -1091,6 +1124,9 @@ class _Handler(BaseHTTPRequestHandler):
                     },
                 })
                 self._redirect('/')
+
+            elif path == '/api/sync_order_status':
+                self._send_json(sync_order_status())
 
             elif path == '/api/smart_order':
                 data   = json.loads(self._read_body().decode('utf-8'))
