@@ -645,6 +645,29 @@ async function cancelOrder(orderId) {
 // ── Market status ───────────────────────────────────────────────────────────
 let _mktLastPerm  = '';
 let _mktSinceTime = '';
+
+async function fetchPermissionSinceTime(perm) {
+  // Walk the history array backwards to find the start of the current
+  // permission streak — gives the actual epoch time, not the browser clock.
+  try {
+    const r       = await fetch('http://127.0.0.1:5002/api/history');
+    const history = await r.json();
+    const entries = history.filter(e => e && e.timestamp && e.trade_permission);
+    if (!entries.length) return '';
+    // Find last entry with a *different* permission; the one after it is the start.
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (entries[i].trade_permission !== perm) {
+        const start = entries[i + 1];
+        return start ? start.timestamp.slice(0, 5) : '';
+      }
+    }
+    // Every history entry has this permission — use the oldest one.
+    return entries[0].timestamp.slice(0, 5);
+  } catch(e) {
+    return '';
+  }
+}
+
 async function refreshMarketStatus() {
   const badge = document.getElementById('mkt-badge');
   if (!badge) return;
@@ -655,7 +678,7 @@ async function refreshMarketStatus() {
     if (perm !== _mktLastPerm) {
       _mktLastPerm = perm;
       if (perm === 'Buy Allowed' || perm === 'Short Allowed') {
-        _mktSinceTime = new Date().toTimeString().slice(0, 5);
+        _mktSinceTime = await fetchPermissionSinceTime(perm);
       } else {
         _mktSinceTime = '';
       }
