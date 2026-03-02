@@ -652,11 +652,11 @@ async function fetchPermissionSinceTime(perm) {
   try {
     const r       = await fetch('http://127.0.0.1:5002/api/history');
     const history = await r.json();
-    const entries = history.filter(e => e && e.timestamp && e.trade_permission);
+    const entries = history.filter(e => e && e.timestamp && (e.trade_permission || e.TradePermission));
     if (!entries.length) return '';
     // Find last entry with a *different* permission; the one after it is the start.
     for (let i = entries.length - 1; i >= 0; i--) {
-      if (entries[i].trade_permission !== perm) {
+      if ((entries[i].trade_permission || entries[i].TradePermission) !== perm) {
         const start = entries[i + 1];
         return start ? start.timestamp.slice(0, 5) : '';
       }
