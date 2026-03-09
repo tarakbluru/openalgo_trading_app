@@ -349,6 +349,20 @@ def api_sync_order_status():
     return jsonify(sync_order_status())
 
 
+@app.route('/api/dismiss_order', methods=['POST'])
+def api_dismiss_order():
+    """Remove a stuck order from local tracking without touching the broker."""
+    try:
+        data = request.get_json(force=True)
+        order_id = data['order_id']
+        orders = load_orders()
+        orders = [o for o in orders if o.get('order_id') != order_id]
+        save_orders(orders)
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route('/api/cancel_order', methods=['POST'])
 def api_cancel_order():
     try:
